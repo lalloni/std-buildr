@@ -30,6 +30,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/Masterminds/semver"
+
 	"github.com/apex/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -47,12 +49,17 @@ var packageCmd = &cobra.Command{
 	RunE:  runPackage,
 }
 
+var (
+	tagNameRegexp = regexp.MustCompile("^v(.*)$")
+	includeRegexp = regexp.MustCompile("^@@(.*)$")
+)
+
 func init() {
 	rootCmd.AddCommand(packageCmd)
 }
 
 type packageConfig struct {
-	Version    string
+	Version    *semver.Version
 	Untracked  bool
 	Changed    bool
 	Uncommited bool
@@ -71,9 +78,17 @@ func runPackage(cmd *cobra.Command, args []string) error {
 
 	packageCfg := &packageConfig{}
 
-	packageCfg.Version, err = sh.Output("git", "describe", "--abbrev=40", "HEAD")
+	v1, err := sh.Output("git", "describe", "--abbrev=40", "HEAD")
 	if err != nil {
 		return errors.Wrap(err, "getting version from git")
+	}
+	v2 := tagNameRegexp.FindStringSubmatch(v1)
+	if v2 == nil {
+		return errors.Errorf("tag name must be prefixed with a 'v' character (found '%s')", packageCfg.Version)
+	}
+	packageCfg.Version, err = semver.NewVersion(v2[1])
+	if err != nil {
+		return errors.Wrapf(err, "tag name must be a valid semver 2 string prefixed with a 'v' character (found '%s')", packageCfg.Version)
 	}
 	log.Infof("version is %s", packageCfg.Version)
 
@@ -107,8 +122,6 @@ func runPackage(cmd *cobra.Command, args []string) error {
 	}
 	return err
 }
-
-var include = regexp.MustCompile("^@@(.*)$")
 
 func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 	const targetSource = "target/source"
@@ -147,7 +160,7 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 		s := bufio.NewScanner(in)
 		for s.Scan() {
 			l := s.Text()
-			ms := include.FindStringSubmatch(l)
+			ms := includeRegexp.FindStringSubmatch(l)
 			if ms == nil {
 				_, err := fmt.Fprintln(out, l)
 				if err != nil {

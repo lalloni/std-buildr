@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/Masterminds/semver"
+  packages = ["."]
+  revision = "c7af12943936e8c39859482e61f0574c2fd7fc75"
+  version = "v1.4.2"
+
+[[projects]]
   name = "github.com/apex/log"
   packages = [
     ".",
@@ -162,6 +168,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1dbc799b7217b942cce7e416248ea850f8fcd6868d8534c6176d02d5e9dbd9c2"
+  inputs-digest = "160c2ff461304c4817f374e09e4256748b189fe5e044f45bba25cead9a6321fb"
   solver-name = "gps-cdcl"
   solver-version = 1
