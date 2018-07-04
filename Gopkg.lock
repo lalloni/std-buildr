@@ -55,6 +55,12 @@
   version = "v1.8.0"
 
 [[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
@@ -156,6 +162,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5866f1f1aec3f4137677f7ab91248bb92bca00995b32e23e98752a99f69be8e1"
+  inputs-digest = "1dbc799b7217b942cce7e416248ea850f8fcd6868d8534c6176d02d5e9dbd9c2"
   solver-name = "gps-cdcl"
   solver-version = 1

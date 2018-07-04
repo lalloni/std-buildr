@@ -18,34 +18,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package cmd
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/apex/log"
-	"github.com/apex/log/handlers/cli"
-	"github.com/mattn/go-isatty"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"gitlab.cloudint.afip.gob.ar/buildr/buildr/cmd"
 )
 
-var (
-	version = "dev"
-	commit  string
-	date    string
-)
+// versionCmd represents the version command
+var versionCmd = &cobra.Command{
+	Use:               "version",
+	Short:             "Print version and exit",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error { return nil },
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(viper.GetString("version"))
+	},
+}
 
-func main() {
-	if version == "dev" {
-		viper.Set("version", "dev")
-	} else {
-		viper.Set("version", fmt.Sprintf("%s-%s (%s)", version, commit, date))
-	}
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		log.SetHandler(cli.New(os.Stdout))
-	}
-	cmd.Execute()
+func init() {
+	rootCmd.AddCommand(versionCmd)
 }
