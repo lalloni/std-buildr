@@ -13,15 +13,17 @@
 
 ## UC 1: Empaquetar app Oracle SQL
 
+Caso oracle-sql-evolutional
+
 Proyecto:
 
 ```tree
 src/
   sql/
     incremental/
-      000001.sql
-      000002.sql
-      000003.sql
+      000001-ddl.sql
+      000002-dml.sql
+      000003-dcl.sql
     replaceable/
       procedure-foo.sql
       view-bar.sql
