@@ -46,7 +46,7 @@ import (
 var packageCmd = &cobra.Command{
 	Use:   "package",
 	Short: "Package the project",
-	RunE:  runPackage,
+	RunE:  chain(runClean, runPackage),
 }
 
 var (
@@ -78,7 +78,7 @@ func (p *packageConfig) PackageVersion() string {
 	return s
 }
 
-func runPackage(cmd *cobra.Command, args []string) error {
+func runPackage() error {
 	gitversion, err := sh.Output("git", "--version")
 	if err != nil {
 		return errors.Wrapf(err, "determining git version: %s", gitversion)

@@ -31,12 +31,14 @@ import (
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Remove target",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Info("removing target")
-		return os.RemoveAll("target")
-	},
+	RunE:  chain(runClean),
 }
 
 func init() {
 	rootCmd.AddCommand(cleanCmd)
+}
+
+func runClean() error {
+	log.Info("removing target")
+	return os.RemoveAll("target")
 }
