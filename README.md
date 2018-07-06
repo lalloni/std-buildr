@@ -20,11 +20,11 @@ Proyecto:
 ```tree
 src/
   sql/
-    incremental/
+    inc[remental]/
       000001-ddl.sql
       000002-dml.sql
       000003-dcl.sql
-    replaceable/
+    rep[laceable]/
       procedure-foo.sql
       view-bar.sql
       package-baz.sql
