@@ -31,7 +31,6 @@ import (
 	"regexp"
 
 	"github.com/Masterminds/semver"
-
 	"github.com/apex/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -68,6 +67,14 @@ type packageConfig struct {
 
 func (p *packageConfig) Dirty() bool {
 	return p.Untracked || p.Uncommited || p.Changed
+}
+
+func (p *packageConfig) PackageVersion() string {
+	s := p.Version.String()
+	if p.Dirty() {
+		s = s + "-dirty"
+	}
+	return s
 }
 
 func runPackage(cmd *cobra.Command, args []string) error {
@@ -113,7 +120,6 @@ func runPackage(cmd *cobra.Command, args []string) error {
 	log.Infof("uncommited staged files present: %v", packageCfg.Uncommited)
 
 	cfg := viper.Get("buildr.config").(*config.Config)
-	log.Infof("config is %+v", cfg)
 
 	switch cfg.Type {
 	case config.TypeOracleSQLEvolutional:
@@ -208,7 +214,7 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	targetPackage := fmt.Sprintf("target/%s-%s-%s.tar.xz", c.SystemID, c.ApplicationID, p.Version)
+	targetPackage := fmt.Sprintf("target/%s-%s.tar.xz", c.ApplicationID, p.PackageVersion())
 	log.Infof("writing to '%s'", targetPackage)
 	w, err := os.Create(targetPackage)
 	if err != nil {
