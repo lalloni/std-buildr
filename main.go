@@ -29,7 +29,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/viper"
 
-	"gitlab.cloudint.afip.gob.ar/buildr/buildr/cmd"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/cmd"
 )
 
 var (

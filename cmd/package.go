@@ -38,8 +38,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/ulikunitz/xz"
 
-	"gitlab.cloudint.afip.gob.ar/buildr/buildr/config"
-	"gitlab.cloudint.afip.gob.ar/buildr/buildr/sh"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 )
 
 // packageCmd represents the package command
