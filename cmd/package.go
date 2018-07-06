@@ -21,8 +21,8 @@
 package cmd
 
 import (
-	"archive/tar"
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -30,12 +30,13 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
+
 	"github.com/Masterminds/semver"
 	"github.com/apex/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/ulikunitz/xz"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
@@ -80,7 +81,7 @@ func (p *packageConfig) PackageVersion() string {
 func runPackage(cmd *cobra.Command, args []string) error {
 	gitversion, err := sh.Output("git", "--version")
 	if err != nil {
-		return errors.Wrap(err, "determining git version")
+		return errors.Wrapf(err, "determining git version: %s", gitversion)
 	}
 	log.Info(gitversion)
 
@@ -88,7 +89,7 @@ func runPackage(cmd *cobra.Command, args []string) error {
 
 	v1, err := sh.Output("git", "describe", "--abbrev=40", "HEAD")
 	if err != nil {
-		return errors.Wrap(err, "getting version from git")
+		return errors.Wrapf(err, "getting version from git: %s", v1)
 	}
 	v2 := tagNameRegexp.FindStringSubmatch(v1)
 	if v2 == nil {
@@ -102,7 +103,7 @@ func runPackage(cmd *cobra.Command, args []string) error {
 
 	s, err := sh.Output("git", "ls-files", "--exclude-standard", "--others")
 	if err != nil {
-		return errors.Wrap(err, "listing untracked files from git")
+		return errors.Wrapf(err, "listing untracked files from git: %s", s)
 	}
 	packageCfg.Untracked = len(s) > 0
 	log.Infof("untracked files present: %v", packageCfg.Untracked)
@@ -145,6 +146,7 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 	}
 
 	// preprocess
+	sourcesTargetMap := make(map[string]string)
 	sources, err := sh.CollectFiles(base)
 	if err != nil {
 		return errors.Wrapf(err, "collecting source files from '%s'", base)
@@ -168,6 +170,7 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 
 		log.Infof("processing source file '%s'", source)
 		target := targetSource + "/" + targetName
+		sourcesTargetMap[source] = target
 		in, err := os.Open(source)
 		if err != nil {
 			return errors.Wrapf(err, "opening '%s'", source)
@@ -209,54 +212,51 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 		out.Close()
 	}
 
-	// package
-	sources, err = sh.CollectFiles(targetSource)
+	// package all
+	log.Infof("generating full package")
+	targetSources, err := sh.CollectFiles(targetSource)
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
 	targetPackage := fmt.Sprintf("target/%s-%s.tar.xz", c.ApplicationID, p.PackageVersion())
 	log.Infof("writing to '%s'", targetPackage)
-	w, err := os.Create(targetPackage)
+	err = ar.TarXz(targetPackage, targetSources, path.Base)
 	if err != nil {
-		return errors.Wrapf(err, "creating target package file")
+		return errors.Wrapf(err, "packaging source files")
 	}
-	defer w.Close()
-	xzw, err := xz.NewWriter(w)
-	if err != nil {
-		return errors.Wrapf(err, "creating target xz stream writer")
+
+	// package incrementals
+	if len(c.From) > 0 {
+		log.Infof("generating incremental packages")
+		for _, from := range c.From {
+			log.Infof("from %s: listing v%s tag files", from, from)
+			include := make(map[string]string)
+			for k, v := range sourcesTargetMap {
+				include[k] = v
+			}
+			s, err := sh.Output("git", "ls-tree", "-r", "--name-only", "v"+from)
+			if err != nil {
+				return errors.Wrapf(err, "listing tag 'v%s' content: %s", from, s)
+			}
+			ss := bufio.NewScanner(bytes.NewBufferString(s))
+			for ss.Scan() {
+				f := ss.Text()
+				delete(include, f)
+				log.Infof("excluding %s", f)
+			}
+			targetSources := make([]string, 0)
+			for _, v := range include {
+				targetSources = append(targetSources, v)
+			}
+			targetPackage := fmt.Sprintf("target/%s-%s-from-%s.tar.xz", c.ApplicationID, p.PackageVersion(), from)
+			log.Infof("writing to '%s'", targetPackage)
+			err = ar.TarXz(targetPackage, targetSources, path.Base)
+			if err != nil {
+				return errors.Wrapf(err, "packaging source files")
+			}
+		}
 	}
-	defer xzw.Close()
-	tw := tar.NewWriter(xzw)
-	for _, source := range sources {
-		n := path.Base(source)
-		log.Infof("packaging processed file '%s'", source)
-		fi, err := os.Stat(source)
-		if err != nil {
-			return errors.Wrapf(err, "reading info of processed file '%s'", source)
-		}
-		h, err := tar.FileInfoHeader(fi, "")
-		if err != nil {
-			return errors.Wrapf(err, "building tar header for processes file '%s'", source)
-		}
-		h.Name = n
-		err = tw.WriteHeader(h)
-		if err != nil {
-			return errors.Wrapf(err, "writing tar header for processed file '%s'", source)
-		}
-		in, err := os.Open(source)
-		if err != nil {
-			return errors.Wrapf(err, "opening processed file '%s'", source)
-		}
-		_, err = io.Copy(tw, in)
-		in.Close()
-		if err != nil {
-			return errors.Wrapf(err, "copying processed file '%s' data", source)
-		}
-	}
-	err = tw.Close()
-	if err != nil {
-		return errors.Wrapf(err, "writing package file '%s'", targetPackage)
-	}
+
 	log.Info("done")
 	return nil
 }
