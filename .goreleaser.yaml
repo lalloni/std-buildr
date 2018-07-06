@@ -1,6 +1,6 @@
 project_name: std-buildr
 builds:
-  - binary: buildr
+  - binary: std-buildr
     goos:
       - windows
       - darwin
@@ -27,6 +27,7 @@ release:
   disable: true
 puts:
   - name: nexus
+    mode: archive
     target: https://nexus.cloudint.afip.gob.ar/std-raw/std/{{ .ProjectName }}/{{ .Version }}/
     checksum: true
     signature: true
