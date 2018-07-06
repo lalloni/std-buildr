@@ -50,8 +50,9 @@ var packageCmd = &cobra.Command{
 }
 
 var (
-	tagNameRegexp = regexp.MustCompile("^v(.*)$")
-	includeRegexp = regexp.MustCompile("^@@(.*)$")
+	tagNameRegexp     = regexp.MustCompile(`^v(.*)$`)
+	includeRegexp     = regexp.MustCompile(`^@@(.*)$`)
+	evolutionalRegexp = regexp.MustCompile(`^(.+-)?([0-9]{6,})-(dml|dcl|ddl)(-.+)?\.sql$`)
 )
 
 func init() {
@@ -90,7 +91,7 @@ func runPackage(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrapf(err, "tag name must be a valid semver 2 string prefixed with a 'v' character (found '%s')", packageCfg.Version)
 	}
-	log.Infof("version is %s", packageCfg.Version)
+	log.Infof("version is '%s'", packageCfg.Version)
 
 	s, err := sh.Output("git", "ls-files", "--exclude-standard", "--others")
 	if err != nil {
@@ -118,7 +119,7 @@ func runPackage(cmd *cobra.Command, args []string) error {
 	case config.TypeOracleSQLEvolutional:
 		err = packageOracleSQLEvolutional(cfg, packageCfg)
 	default:
-		err = errors.Errorf("type not implemented: %s", cfg.Type)
+		err = errors.Errorf("type not implemented: '%s'", cfg.Type)
 	}
 	return err
 }
@@ -140,21 +141,37 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 	// preprocess
 	sources, err := sh.CollectFiles(base)
 	if err != nil {
-		return errors.Wrapf(err, "collecting source files from %s", base)
+		return errors.Wrapf(err, "collecting source files from '%s'", base)
 	}
+
 	for _, source := range sources {
-		log.Infof("processing source file %s", source)
-		target := fmt.Sprintf("%s/%s-%s-%s", targetSource, c.SystemID, c.ApplicationID, path.Base(source))
+
+		if !evolutionalRegexp.MatchString(path.Base(source)) {
+			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, evolutionalRegexp.String())
+		}
+
+		ss := evolutionalRegexp.FindStringSubmatch(path.Base(source))
+		if len(ss[1]) != 0 && ss[1] != c.ApplicationID+"-" {
+			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], c.ApplicationID)
+		}
+
+		targetName := path.Base(source)
+		if len(ss[1]) == 0 {
+			targetName = c.ApplicationID + "-" + targetName
+		}
+
+		log.Infof("processing source file '%s'", source)
+		target := targetSource + "/" + targetName
 		in, err := os.Open(source)
 		if err != nil {
-			return errors.Wrapf(err, "opening %s", source)
+			return errors.Wrapf(err, "opening '%s'", source)
 		}
 		defer in.Close()
-		log.Infof("into target file %s", target)
+		log.Infof("into target file '%s'", target)
 		out, err := os.Create(target)
 		if err != nil {
 			in.Close()
-			return errors.Wrapf(err, "creating %s", target)
+			return errors.Wrapf(err, "creating '%s'", target)
 		}
 		defer out.Close()
 		s := bufio.NewScanner(in)
@@ -168,16 +185,16 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 				}
 			} else {
 				i := filepath.Clean(filepath.Join(filepath.Dir(source), ms[1]))
-				log.Infof("including %s", i)
+				log.Infof("including '%s'", i)
 				inc, err := os.Open(i)
 				if err != nil {
-					return errors.Wrapf(err, "opening %s include %s", source, ms[1])
+					return errors.Wrapf(err, "opening '%s' include '%s'", source, ms[1])
 				}
 				fmt.Fprintln(out, "-- begin include "+ms[1])
 				_, err = io.Copy(out, inc)
 				inc.Close()
 				if err != nil {
-					return errors.Wrapf(err, "copying include contents from %s into %s", ms[1], source, target)
+					return errors.Wrapf(err, "copying include contents from '%s' into '%s'", ms[1], source, target)
 				}
 				fmt.Fprintln(out, "-- end include "+ms[1])
 			}
@@ -189,10 +206,10 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 	// package
 	sources, err = sh.CollectFiles(targetSource)
 	if err != nil {
-		return errors.Wrapf(err, "collecting preprocessed files from %s", targetSource)
+		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
 	targetPackage := fmt.Sprintf("target/%s-%s-%s.tar.xz", c.SystemID, c.ApplicationID, p.Version)
-	log.Infof("writing to %s", targetPackage)
+	log.Infof("writing to '%s'", targetPackage)
 	w, err := os.Create(targetPackage)
 	if err != nil {
 		return errors.Wrapf(err, "creating target package file")
@@ -206,33 +223,33 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 	tw := tar.NewWriter(xzw)
 	for _, source := range sources {
 		n := path.Base(source)
-		log.Infof("packaging processed file %s", source)
+		log.Infof("packaging processed file '%s'", source)
 		fi, err := os.Stat(source)
 		if err != nil {
-			return errors.Wrapf(err, "reading info of processed file %s", source)
+			return errors.Wrapf(err, "reading info of processed file '%s'", source)
 		}
 		h, err := tar.FileInfoHeader(fi, "")
 		if err != nil {
-			return errors.Wrapf(err, "building tar header for processes file %s", source)
+			return errors.Wrapf(err, "building tar header for processes file '%s'", source)
 		}
 		h.Name = n
 		err = tw.WriteHeader(h)
 		if err != nil {
-			return errors.Wrapf(err, "writing tar header for processed file %s", source)
+			return errors.Wrapf(err, "writing tar header for processed file '%s'", source)
 		}
 		in, err := os.Open(source)
 		if err != nil {
-			return errors.Wrapf(err, "opening processed file %s", source)
+			return errors.Wrapf(err, "opening processed file '%s'", source)
 		}
 		_, err = io.Copy(tw, in)
 		in.Close()
 		if err != nil {
-			return errors.Wrapf(err, "copying processed file %s data", source)
+			return errors.Wrapf(err, "copying processed file '%s' data", source)
 		}
 	}
 	err = tw.Close()
 	if err != nil {
-		return errors.Wrapf(err, "writing package file %s", targetPackage)
+		return errors.Wrapf(err, "writing package file '%s'", targetPackage)
 	}
 	log.Info("done")
 	return nil
