@@ -1,5 +1,5 @@
-system-id: "buildr"
-application-id: "buildr-sql"
+system-id: "sys-x"
+application-id: "sys-x-sql"
 type: "oracle-sql-evolutional"
 from:
     - 0.0.1
