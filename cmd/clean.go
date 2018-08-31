@@ -25,6 +25,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
+
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 )
 
 // cleanCmd represents the clean command
@@ -38,7 +40,7 @@ func init() {
 	rootCmd.AddCommand(cleanCmd)
 }
 
-func runClean() error {
+func runClean(ctx *context.Context) error {
 	log.Info("removing target")
 	return os.RemoveAll("target")
 }
