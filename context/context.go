@@ -1,9 +1,5 @@
 package context
 
-import (
-	"github.com/Masterminds/semver"
-)
-
 type Context struct {
 	Build     Build
 	Artifacts []Artifact
@@ -14,7 +10,8 @@ func (c *Context) AddArtifact(file string) {
 }
 
 type Build struct {
-	Version    *semver.Version
+	Version    string
+	Prerelease string
 	Untracked  bool
 	Changed    bool
 	Uncommited bool
@@ -25,7 +22,7 @@ func (p *Build) Dirty() bool {
 }
 
 func (p *Build) String() string {
-	s := p.Version.String()
+	s := p.Version + p.Prerelease
 	if p.Dirty() {
 		s = s + "-dirty"
 	}
