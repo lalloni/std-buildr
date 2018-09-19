@@ -5,6 +5,7 @@ import (
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packager/sqldef"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packager/sqleve"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packager/sqlevo"
 )
@@ -25,6 +26,8 @@ func New(cfg *config.Config) (Packager, error) {
 		return PackagerFunc(sqlevo.Package), nil
 	case config.TypeOracleSQLEventual:
 		return PackagerFunc(sqleve.Package), nil
+	case config.TypeOracleSQLDeferred:
+		return PackagerFunc(sqldef.Package), nil
 	default:
 		return nil, errors.Errorf("Packager not available for project type %q", cfg.Type)
 	}

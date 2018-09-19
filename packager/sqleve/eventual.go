@@ -1,10 +1,7 @@
 package sqleve
 
 import (
-<<<<<<< HEAD
 	"bufio"
-=======
->>>>>>> d4a6648... Agregar informacion de Artefacto
 	"fmt"
 	"os"
 	"path"

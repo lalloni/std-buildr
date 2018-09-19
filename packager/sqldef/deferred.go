@@ -1,6 +1,7 @@
 package sqldef
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path"
@@ -87,11 +88,17 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 			return errors.Wrapf(err, "creating '%s'", target)
 		}
 		defer out.Close()
+		s := bufio.NewScanner(in)
+		for s.Scan() {
+			l := s.Text()
+			_, err := fmt.Fprintln(out, l)
+			if err != nil {
+				return errors.Wrap(err, "copying input to output")
+			}
+		}
 		in.Close()
 		out.Close()
 	}
-	// package all
-
 	// package complete
 	log.Infof("generating complete package")
 	targetSources, err := sh.CollectFiles(targetSource)
