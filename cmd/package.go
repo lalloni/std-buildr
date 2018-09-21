@@ -30,22 +30,22 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
-
 	"github.com/Masterminds/semver"
 	"github.com/apex/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 )
 
 // packageCmd represents the package command
 var packageCmd = &cobra.Command{
 	Use:   "package",
-	Short: "Package the project",
+	Short: "Package the current version of the project",
 	RunE:  chain(runClean, runPackage),
 }
 
@@ -59,33 +59,12 @@ func init() {
 	rootCmd.AddCommand(packageCmd)
 }
 
-type packageConfig struct {
-	Version    *semver.Version
-	Untracked  bool
-	Changed    bool
-	Uncommited bool
-}
-
-func (p *packageConfig) Dirty() bool {
-	return p.Untracked || p.Uncommited || p.Changed
-}
-
-func (p *packageConfig) PackageVersion() string {
-	s := p.Version.String()
-	if p.Dirty() {
-		s = s + "-dirty"
-	}
-	return s
-}
-
-func runPackage() error {
+func runPackage(ctx *context.Context) error {
 	gitversion, err := sh.Output("git", "--version")
 	if err != nil {
 		return errors.Wrapf(err, "determining git version: %s", gitversion)
 	}
 	log.Info(gitversion)
-
-	packageCfg := &packageConfig{}
 
 	v1, err := sh.Output("git", "describe", "--abbrev=40", "HEAD")
 	if err != nil {
@@ -93,45 +72,45 @@ func runPackage() error {
 	}
 	v2 := tagNameRegexp.FindStringSubmatch(v1)
 	if v2 == nil {
-		return errors.Errorf("tag name must be prefixed with a 'v' character (found '%s')", packageCfg.Version)
+		return errors.Errorf("tag name must be prefixed with a 'v' character (found '%s')", ctx.Build.Version)
 	}
-	packageCfg.Version, err = semver.NewVersion(v2[1])
+	ctx.Build.Version, err = semver.NewVersion(v2[1])
 	if err != nil {
-		return errors.Wrapf(err, "tag name must be a valid semver 2 string prefixed with a 'v' character (found '%s')", packageCfg.Version)
+		return errors.Wrapf(err, "tag name must be a valid semver 2 string prefixed with a 'v' character (found '%s')", ctx.Build.Version)
 	}
-	log.Infof("version is '%s'", packageCfg.Version)
+	log.Infof("version is '%s'", ctx.Build.Version)
 
 	s, err := sh.Output("git", "ls-files", "--exclude-standard", "--others")
 	if err != nil {
 		return errors.Wrapf(err, "listing untracked files from git: %s", s)
 	}
-	packageCfg.Untracked = len(s) > 0
-	log.Infof("untracked files present: %v", packageCfg.Untracked)
+	ctx.Build.Untracked = len(s) > 0
+	log.Infof("untracked files present: %v", ctx.Build.Untracked)
 
 	err = sh.Run("git", "diff-files", "--quiet")
 	if err != nil {
-		packageCfg.Changed = true
+		ctx.Build.Changed = true
 	}
-	log.Infof("changed tracked files present: %v", packageCfg.Changed)
+	log.Infof("changed tracked files present: %v", ctx.Build.Changed)
 
 	err = sh.Run("git", "diff-index", "--cached", "--quiet", "HEAD")
 	if err != nil {
-		packageCfg.Uncommited = true
+		ctx.Build.Uncommited = true
 	}
-	log.Infof("uncommited staged files present: %v", packageCfg.Uncommited)
+	log.Infof("uncommited staged files present: %v", ctx.Build.Uncommited)
 
 	cfg := viper.Get("buildr.config").(*config.Config)
 
 	switch cfg.Type {
 	case config.TypeOracleSQLEvolutional:
-		err = packageOracleSQLEvolutional(cfg, packageCfg)
+		err = packageOracleSQLEvolutional(ctx, cfg)
 	default:
 		err = errors.Errorf("type not implemented: '%s'", cfg.Type)
 	}
 	return err
 }
 
-func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
+func packageOracleSQLEvolutional(ctx *context.Context, c *config.Config) error {
 	const targetSource = "target/source"
 	err := os.MkdirAll(targetSource, 0775)
 	if err != nil {
@@ -218,12 +197,13 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	targetPackage := fmt.Sprintf("target/%s-%s.tar.xz", c.ApplicationID, p.PackageVersion())
+	targetPackage := fmt.Sprintf("target/%s-%s.tar.xz", c.ApplicationID, ctx.Build.String())
 	log.Infof("writing to '%s'", targetPackage)
 	err = ar.TarXz(targetPackage, targetSources, path.Base)
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}
+	ctx.AddArtifact(targetPackage)
 
 	// package incrementals
 	if len(c.From) > 0 {
@@ -248,12 +228,13 @@ func packageOracleSQLEvolutional(c *config.Config, p *packageConfig) error {
 			for _, v := range include {
 				targetSources = append(targetSources, v)
 			}
-			targetPackage := fmt.Sprintf("target/%s-%s-from-%s.tar.xz", c.ApplicationID, p.PackageVersion(), from)
+			targetPackage := fmt.Sprintf("target/%s-%s-from-%s.tar.xz", c.ApplicationID, ctx.Build.String(), from)
 			log.Infof("writing to '%s'", targetPackage)
 			err = ar.TarXz(targetPackage, targetSources, path.Base)
 			if err != nil {
 				return errors.Wrapf(err, "packaging source files")
 			}
+			ctx.AddArtifact(targetPackage)
 		}
 	}
 

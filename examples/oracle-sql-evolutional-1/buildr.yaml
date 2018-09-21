@@ -1,6 +1,0 @@
-system-id: "sys-x"
-application-id: "sys-x-sql"
-type: "oracle-sql-evolutional"
-from:
-    - 0.1.0
-    - 0.2.0
