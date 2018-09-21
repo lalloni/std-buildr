@@ -13,7 +13,7 @@
 
 ## UC 1: Empaquetar app Oracle SQL
 
-Caso oracle-sql-evolutional
+### Caso oracle-sql-evolutional
 
 Proyecto:
 
@@ -80,6 +80,50 @@ Conteniendo `factura-blockchain-sql-1.2.3-from-1.2.0.zip`:
 ```
 
 Todos los script incrementales tendrán reemplazadas las directivas `@@<file>` por el contenido del archivo `<file>`.
+
+### Caso oracle-sql-eventual
+
+Proyecto:
+
+```tree
+src/
+  sql/
+      corregir-datos.sql
+buildr.yaml
+```
+
+Teniendo en `buildr.yaml`:
+
+```yaml
+system-id: "factura-blockchain"
+application-id: "sql-eventual"
+type: "oracle-sql-eventual"
+```
+
+Se debe:
+
+```sh
+git tag -s redmine-dieccs-12334-1 -m "versión 1 de redmine-dieccs-12334"
+```
+
+Ejecutando:
+
+```sh
+std-buildr package
+```
+
+Se obtendrá:
+
+```tree
+target/
+  factura-blockchain-sql-eventual-redmine-dieccs-12334-1.zip
+```
+
+Conteniendo `factura-blockchain-sql-eventual-redmine-dieccs-12334-1.zip`:
+
+```tree
+redmine-dieccs-12334-1-corregir-datos.sql
+```
 
 ## Notas
 

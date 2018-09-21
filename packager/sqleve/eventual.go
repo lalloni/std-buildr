@@ -1,6 +1,7 @@
-package packages
+package sqleve
 
 import (
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 	"fmt"
 	"os"
 	"path"
@@ -8,20 +9,22 @@ import (
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
+
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 )
 
-func PackageOracleSQLEventual(ctx *context.Context, c *config.Config) error {
+const targetSource = "target/source"
 
-	err := VerifyEventualSQLOracleVersion(ctx)
+func Package(cfg *config.Config, ctx *context.Context) error {
+
+	ev,err := version.ParseEventualVersion(ctx.Build.Version)
 	if err != nil {
-		return errors.Wrapf(err, "verifying version")
+		return errors.Wrap(err,"checking eventual version")
 	}
 
-	const targetSource = "target/source"
 	err = os.MkdirAll(targetSource, 0775)
 	if err != nil {
 		return errors.Wrapf(err, "creating directory")
@@ -29,10 +32,11 @@ func PackageOracleSQLEventual(ctx *context.Context, c *config.Config) error {
 	base, err := sh.FirstExist("src/sql")
 	if err != nil {
 		if os.IsNotExist(err) {
-			return errors.Errorf("missing scripts sources (at 'src/sql/inc[remental]')")
+			return errors.Errorf("missing scripts sources (at 'src/sql')")
 		}
-		return errors.Wrapf(err, "checking incremental source presence")
+		return errors.Wrapf(err, "checking eventual source presence")
 	}
+
 	// preprocess
 	sourcesTargetMap := make(map[string]string)
 	sources, err := sh.CollectFiles(base)
@@ -54,7 +58,7 @@ func PackageOracleSQLEventual(ctx *context.Context, c *config.Config) error {
 			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, eventualRegexp.String())
 		}
 
-		targetName := c.ApplicationID + "-" + path.Base(source)
+		targetName := cfg.ApplicationID + "-" + path.Base(source)
 		log.Infof("processing source file '%s'", source)
 		target := targetSource + "/" + targetName
 		sourcesTargetMap[source] = target

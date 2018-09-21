@@ -26,11 +26,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packages"
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packager"
 )
 
 // packageCmd represents the package command
@@ -45,46 +44,25 @@ func init() {
 }
 
 func runPackage(ctx *context.Context) error {
-	gitversion, err := sh.Output("git", "--version")
-	if err != nil {
-		return errors.Wrapf(err, "determining git version: %s", gitversion)
-	}
-	log.Info(gitversion)
 
-		return errors.Errorf("tag name must be prefixed with a 'v' character (found '%s')", ctx.Build.Version)
-	if err != nil {
-		return errors.Wrapf(err, "getting version from git: %s", ctx.Build.Version)
-	}
+	git.GetStateIn(ctx)
+
 	log.Infof("version is '%s'", ctx.Build.Version)
-
-	s, err := sh.Output("git", "ls-files", "--exclude-standard", "--others")
-	if err != nil {
-		return errors.Wrapf(err, "listing untracked files from git: %s", s)
-	}
-	ctx.Build.Untracked = len(s) > 0
 	log.Infof("untracked files present: %v", ctx.Build.Untracked)
-
-	err = sh.Run("git", "diff-files", "--quiet")
-	if err != nil {
-		ctx.Build.Changed = true
-	}
 	log.Infof("changed tracked files present: %v", ctx.Build.Changed)
-
-	err = sh.Run("git", "diff-index", "--cached", "--quiet", "HEAD")
-	if err != nil {
-		ctx.Build.Uncommited = true
-	}
 	log.Infof("uncommited staged files present: %v", ctx.Build.Uncommited)
 
 	cfg := viper.Get("buildr.config").(*config.Config)
 
-	switch cfg.Type {
-	case config.TypeOracleSQLEvolutional:
-		err = packages.PackageOracleSQLEvolutional(ctx, cfg)
-	case config.TypeOracleSQLEventual:
-		err = packages.PackageOracleSQLEventual(ctx, cfg)
-	default:
-		err = errors.Errorf("type not implemented: '%s'", cfg.Type)
+	pkgr, err := packager.New(cfg)
+	if err != nil {
+		return errors.Wrap(err, "getting packager")
 	}
-	return err
+
+	err = pkgr.Package(cfg, ctx)
+	if err != nil {
+		return errors.Wrap(err, "packaging project")
+	}
+
+	return nil
 }

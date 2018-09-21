@@ -1,4 +1,4 @@
-package packages
+package sqlevo
 
 import (
 	"bufio"
@@ -12,10 +12,13 @@ import (
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
+
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 )
 
 var (
@@ -24,11 +27,19 @@ var (
 	evolutionalRegexp = regexp.MustCompile(`^(.+-)?([0-9]{6,})-(dml|dcl|ddl)(-.+)?\.sql$`)
 )
 
-func PackageOracleSQLEvolutional(ctx *context.Context, c *config.Config) error {
+func Package(cfg *config.Config, ctx *context.Context) error {
 
-	err := VerifyStandardVersion(ctx)
+	git.GetStateIn(ctx)
+
+	v := tagNameRegexp.FindStringSubmatch(ctx.Build.Version)
+	if v == nil {
+		return errors.Errorf("tag name must be prefixed with a 'v' character (found '%s')", ctx.Build.Version)
+	}
+	ctx.Build.Version = v[1]
+
+	_, err := version.ParseSemanticVersion(ctx.Build.Version)
 	if err != nil {
-		return errors.Wrapf(err, "verifying version")
+		return errors.Wrap(err, "checking valid semantic version")
 	}
 
 	const targetSource = "target/source"
@@ -58,13 +69,13 @@ func PackageOracleSQLEvolutional(ctx *context.Context, c *config.Config) error {
 		}
 
 		ss := evolutionalRegexp.FindStringSubmatch(path.Base(source))
-		if len(ss[1]) != 0 && ss[1] != c.ApplicationID+"-" {
-			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], c.ApplicationID)
+		if len(ss[1]) != 0 && ss[1] != cfg.ApplicationID+"-" {
+			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], cfg.ApplicationID)
 		}
 
 		targetName := path.Base(source)
 		if len(ss[1]) == 0 {
-			targetName = c.ApplicationID + "-" + targetName
+			targetName = cfg.ApplicationID + "-" + targetName
 		}
 
 		log.Infof("processing source file '%s'", source)
@@ -102,7 +113,7 @@ func PackageOracleSQLEvolutional(ctx *context.Context, c *config.Config) error {
 				_, err = io.Copy(out, inc)
 				inc.Close()
 				if err != nil {
-					return errors.Wrapf(err, "copying include contents from '%s' into '%s'", ms[1], source, target)
+					return errors.Wrapf(err, "copying include contents from '%s' into '%s'", source, target)
 				}
 				fmt.Fprintln(out, "-- end include "+ms[1])
 			}
@@ -111,17 +122,24 @@ func PackageOracleSQLEvolutional(ctx *context.Context, c *config.Config) error {
 		out.Close()
 	}
 
-	// package all
-
-	err = PackageAllSQL(targetSource, ctx, c)
+	// package complete
+	log.Infof("generating complete package")
+	targetSources, err := sh.CollectFiles(targetSource)
 	if err != nil {
-		return errors.Wrapf(err, "packaging all")
+		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
+	targetPackage := fmt.Sprintf("target/%s-%s.tar.xz", cfg.ApplicationID, ctx.Build.String())
+	log.Infof("writing to '%s'", targetPackage)
+	err = ar.TarXz(targetPackage, targetSources, path.Base)
+	if err != nil {
+		return errors.Wrapf(err, "packaging source files")
+	}
+	ctx.AddArtifact(targetPackage)
 
 	// package incrementals
-	if len(c.From) > 0 {
+	if len(cfg.From) > 0 {
 		log.Infof("generating incremental packages")
-		for _, from := range c.From {
+		for _, from := range cfg.From {
 			log.Infof("from %s: listing v%s tag files", from, from)
 			include := make(map[string]string)
 			for k, v := range sourcesTargetMap {
@@ -141,7 +159,7 @@ func PackageOracleSQLEvolutional(ctx *context.Context, c *config.Config) error {
 			for _, v := range include {
 				targetSources = append(targetSources, v)
 			}
-			targetPackage := fmt.Sprintf("target/%s-%s-from-%s.tar.xz", c.ApplicationID, ctx.Build.String(), from)
+			targetPackage := fmt.Sprintf("target/%s-%s-from-%s.tar.xz", cfg.ApplicationID, ctx.Build.String(), from)
 			log.Infof("writing to '%s'", targetPackage)
 			err = ar.TarXz(targetPackage, targetSources, path.Base)
 			if err != nil {
