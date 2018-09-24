@@ -9,12 +9,13 @@ import (
 )
 
 type EventualVersion struct {
-	TrackerID string
-	IssueID   string
-	Version   uint64
+	TrackerID  string
+	IssueID    string
+	Version    uint64
+	Prerelease string
 }
 
-var eventualVersionRegex = regexp.MustCompile(`^(.*)-(\d+)-(\d+)$`)
+var eventualVersionRegex = regexp.MustCompile(`^(.*)\-(\d+)\-(\d+)(\-\d+\-.*)?$`)
 
 func ParseSemanticVersion(version string) (*semver.Version, error) {
 	sv, err := semver.NewVersion(version)
@@ -34,8 +35,9 @@ func ParseEventualVersion(version string) (*EventualVersion, error) {
 		return nil, errors.Errorf("eventual version must be a number instead of %q", v[3])
 	}
 	return &EventualVersion{
-		TrackerID: v[1],
-		IssueID:   v[2],
-		Version:   vn,
+		TrackerID:  v[1],
+		IssueID:    v[2],
+		Version:    vn,
+		Prerelease: v[4],
 	}, nil
 }

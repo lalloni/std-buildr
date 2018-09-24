@@ -5,13 +5,12 @@ type Context struct {
 	Artifacts []Artifact
 }
 
-func (c *Context) AddArtifact(file string) {
-	c.Artifacts = append(c.Artifacts, Artifact{File: file})
+func (c *Context) AddArtifact(file string, path string, isPrerelease bool) {
+	c.Artifacts = append(c.Artifacts, Artifact{File: file, Path: path, IsPrerelease: isPrerelease})
 }
 
 type Build struct {
 	Version    string
-	Prerelease string
 	Untracked  bool
 	Changed    bool
 	Uncommited bool
@@ -22,7 +21,7 @@ func (p *Build) Dirty() bool {
 }
 
 func (p *Build) String() string {
-	s := p.Version + p.Prerelease
+	s := p.Version
 	if p.Dirty() {
 		s = s + "-dirty"
 	}
@@ -30,5 +29,7 @@ func (p *Build) String() string {
 }
 
 type Artifact struct {
-	File string
+	File         string
+	Path         string
+	IsPrerelease bool
 }

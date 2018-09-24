@@ -37,7 +37,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	}
 	ctx.Build.Version = v[1]
 
-	_, err := version.ParseSemanticVersion(ctx.Build.Version)
+	ev, err := version.ParseSemanticVersion(ctx.Build.Version)
 	if err != nil {
 		return errors.Wrap(err, "checking valid semantic version")
 	}
@@ -128,13 +128,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	targetPackage := fmt.Sprintf("target/%s-%s.tar.xz", cfg.ApplicationID, ctx.Build.String())
+	packageName := fmt.Sprintf("%s-%s.tar.xz", cfg.ApplicationID, ctx.Build.String())
+	targetPackage := fmt.Sprintf("target/%s", packageName)
 	log.Infof("writing to '%s'", targetPackage)
 	err = ar.TarXz(targetPackage, targetSources, path.Base)
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}
-	ctx.AddArtifact(targetPackage)
+	ctx.AddArtifact(packageName, targetPackage, (ev.Prerelease() != "" || ctx.Build.Dirty()))
 
 	// package incrementals
 	if len(cfg.From) > 0 {
@@ -159,13 +160,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 			for _, v := range include {
 				targetSources = append(targetSources, v)
 			}
-			targetPackage := fmt.Sprintf("target/%s-%s-from-%s.tar.xz", cfg.ApplicationID, ctx.Build.String(), from)
+			packageName := fmt.Sprintf("%s-%s-from-%s.tar.xz", cfg.ApplicationID, ctx.Build.String(), from)
+			targetPackage := fmt.Sprintf("target/%s", packageName)
 			log.Infof("writing to '%s'", targetPackage)
 			err = ar.TarXz(targetPackage, targetSources, path.Base)
 			if err != nil {
 				return errors.Wrapf(err, "packaging source files")
 			}
-			ctx.AddArtifact(targetPackage)
+			ctx.AddArtifact(packageName, targetPackage, (ev.Prerelease() != "" || ctx.Build.Dirty()))
 		}
 	}
 

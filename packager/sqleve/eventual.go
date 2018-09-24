@@ -1,11 +1,16 @@
 package sqleve
 
 import (
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
+<<<<<<< HEAD
+	"bufio"
+=======
+>>>>>>> d4a6648... Agregar informacion de Artefacto
 	"fmt"
 	"os"
 	"path"
 	"regexp"
+
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
@@ -20,9 +25,9 @@ const targetSource = "target/source"
 
 func Package(cfg *config.Config, ctx *context.Context) error {
 
-	ev,err := version.ParseEventualVersion(ctx.Build.Version)
+	ev, err := version.ParseEventualVersion(ctx.Build.Version)
 	if err != nil {
-		return errors.Wrap(err,"checking eventual version")
+		return errors.Wrap(err, "checking eventual version")
 	}
 
 	err = os.MkdirAll(targetSource, 0775)
@@ -44,18 +49,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		return errors.Wrapf(err, "collecting source files from '%s'", base)
 	}
 
-	eventualMajorVersionRegexp := regexp.MustCompile(`^((.*)-([0-9]+))$`)
+	scriptName := fmt.Sprintf("^%s-%s(-.*)?\\.sql$", ev.TrackerID, ev.IssueID)
 
-	v1 := eventualMajorVersionRegexp.FindStringSubmatch(ctx.Build.Version)
-
-	version := fmt.Sprintf("^%s(-.*)?\\.sql$", v1[2])
-
-	eventualRegexp := regexp.MustCompile(version)
+	scriptNameRegexp := regexp.MustCompile(scriptName)
 
 	for _, source := range sources {
 
-		if !eventualRegexp.MatchString(path.Base(source)) {
-			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, eventualRegexp.String())
+		if !scriptNameRegexp.MatchString(path.Base(source)) {
+			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, scriptNameRegexp.String())
 		}
 
 		targetName := cfg.ApplicationID + "-" + path.Base(source)
@@ -74,6 +75,16 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 			return errors.Wrapf(err, "creating '%s'", target)
 		}
 		defer out.Close()
+
+		s := bufio.NewScanner(in)
+		for s.Scan() {
+			l := s.Text()
+			_, err := fmt.Fprintln(out, l)
+			if err != nil {
+				return errors.Wrap(err, "copying input to output")
+			}
+		}
+
 		in.Close()
 		out.Close()
 	}
@@ -84,12 +95,15 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	targetPackage := fmt.Sprintf("target/%s-%s.tar.xz", c.ApplicationID, ctx.Build.String())
+	packageName := fmt.Sprintf("%s-%s.tar.xz", cfg.ApplicationID, ctx.Build.String())
+	targetPackage := fmt.Sprintf("target/%s", packageName)
 	log.Infof("writing to '%s'", targetPackage)
 	err = ar.TarXz(targetPackage, targetSources, path.Base)
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}
+
+	ctx.AddArtifact(packageName, targetPackage, (ev.Prerelease != "" || ctx.Build.Dirty()))
 
 	return nil
 }

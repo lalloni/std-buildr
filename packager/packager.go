@@ -3,10 +3,10 @@ package packager
 import (
 	"github.com/pkg/errors"
 
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packages"
-
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packager/sqleve"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/packager/sqlevo"
 )
 
 type Packager interface {
@@ -22,9 +22,9 @@ func (f PackagerFunc) Package(cfg *config.Config, ctx *context.Context) error {
 func New(cfg *config.Config) (Packager, error) {
 	switch cfg.Type {
 	case config.TypeOracleSQLEvolutional:
-		return PackagerFunc(packages.PackageOracleSQLEvolutional), nil
+		return PackagerFunc(sqlevo.Package), nil
 	case config.TypeOracleSQLEventual:
-		return PackagerFunc(packages.PackageOracleSQLEventual), nil
+		return PackagerFunc(sqleve.Package), nil
 	default:
 		return nil, errors.Errorf("Packager not available for project type %q", cfg.Type)
 	}
