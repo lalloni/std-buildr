@@ -28,10 +28,15 @@ type Config struct {
 	TrackerID     string   `yaml:"tracker-id,omitempty"`
 	IssueID       string   `yaml:"issue-id,omitempty"`
 	Package       Package  `yaml:"package,omitempty"`
+	Nexus         Nexus    `yaml:"nexus,omitempty"`
 }
 
 type Package struct {
 	Format string `yaml:"format,omitempty"`
+}
+
+type Nexus struct {
+	URL string `yaml:"url,omitempty"`
 }
 
 func (c *Config) Validate() error {
