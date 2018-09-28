@@ -24,7 +24,7 @@ import (
 var (
 	tagNameRegexp     = regexp.MustCompile(`^v(.*)$`)
 	includeRegexp     = regexp.MustCompile(`^@@(.*)$`)
-	evolutionalRegexp = regexp.MustCompile(`^(.+-)?([0-9]{6,})-(dml|dcl|ddl)(-.+)?\.sql$`)
+	evolutionalRegexp = regexp.MustCompile(`^(.+[-|_])?([0-9]{6,})(-|_)(dml|dcl|ddl)([-|_].+)?\.sql$`)
 )
 
 func Package(cfg *config.Config, ctx *context.Context) error {
@@ -69,7 +69,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		}
 
 		ss := evolutionalRegexp.FindStringSubmatch(path.Base(source))
-		if len(ss[1]) != 0 && ss[1] != cfg.ApplicationID+"-" {
+		if len(ss[1]) != 0 && (ss[1] != cfg.ApplicationID+"-" || ss[1] != cfg.ApplicationID+"_") {
 			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], cfg.ApplicationID)
 		}
 

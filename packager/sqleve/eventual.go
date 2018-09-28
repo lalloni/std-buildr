@@ -46,7 +46,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		return errors.Wrapf(err, "collecting source files from '%s'", base)
 	}
 
-	scriptName := fmt.Sprintf("^(.*-)?%s-%s-(dml|dcl|ddl)(-.*)?\\.sql$", ev.TrackerID, ev.IssueID)
+	scriptName := fmt.Sprintf("^(.*[-|_])?%s(-|_)%s(-|_)(dml|dcl|ddl)([-|_].*)?\\.sql$", ev.TrackerID, ev.IssueID)
 
 	scriptNameRegexp := regexp.MustCompile(scriptName)
 
@@ -57,7 +57,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		}
 
 		ss := scriptNameRegexp.FindStringSubmatch(path.Base(source))
-		if len(ss[1]) != 0 && ss[1] != cfg.ApplicationID+"-" {
+		if len(ss[1]) != 0 && (ss[1] != cfg.ApplicationID+"-" || ss[1] != cfg.ApplicationID+"_") {
 			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], cfg.ApplicationID)
 		}
 

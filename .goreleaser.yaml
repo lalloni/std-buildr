@@ -1,6 +1,6 @@
 project_name: std-buildr
 builds:
-  - binary: buildr
+  - binary: std-buildr
     goos:
       - windows
       - darwin
