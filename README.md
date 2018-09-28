@@ -35,7 +35,7 @@ Teniendo en `buildr.yaml`:
 
 ```yaml
 system-id: "factura-blockchain"
-application-id: "sql"
+application-id: "factura-blockchain-sql"
 type: "oracle-sql-evolutional"
 from:
   - "1.0.0"
@@ -96,7 +96,7 @@ Teniendo en `buildr.yaml`:
 
 ```yaml
 system-id: "factura-blockchain"
-application-id: "sql-eventual"
+application-id: "factura-blockchain-sql-eventual"
 type: "oracle-sql-eventual"
 ```
 
@@ -122,7 +122,51 @@ target/
 Conteniendo `factura-blockchain-sql-eventual-redmine-dieccs-12334-1.zip`:
 
 ```tree
-redmine-dieccs-12334-1-corregir-datos.sql
+factura-blockchain-sql-eventual-redmine-dieccs-12334-1-corregir-datos.sql
+```
+
+### Caso oracle-sql-deffered
+
+Proyecto:
+
+```tree
+src/
+  sql/
+      control-diario.sql
+buildr.yaml
+```
+
+Teniendo en `buildr.yaml`:
+
+```yaml
+system-id: "factura-blockchain"
+application-id: "factura-blockchain-sql-process"
+type: "oracle-sql-deffered"
+```
+
+Se debe:
+
+```sh
+git tag -s v1.0.0 -m "versión 1.0.0"
+```
+
+Ejecutando:
+
+```sh
+std-buildr package
+```
+
+Se obtendrá:
+
+```tree
+target/
+  factura-blockchain-sql-process-1.0.0.zip
+```
+
+Conteniendo `factura-blockchain-sql-process-1.0.0.zip`:
+
+```tree
+factura-blockchain-sql-process-1.0.0-control-diario.sql
 ```
 
 ## Notas
