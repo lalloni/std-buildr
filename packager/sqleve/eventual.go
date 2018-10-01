@@ -20,6 +20,10 @@ import (
 
 const targetSource = "target/source"
 
+var (
+	scriptNameRegexp = regexp.MustCompile(`^([\w-_]+)[-_](\d+)[-_](dml|dcl|ddl)(([-_]\w+)+)?\.sql$`)
+)
+
 func Package(cfg *config.Config, ctx *context.Context) error {
 
 	ev, err := version.ParseEventualVersion(ctx.Build.Version)
@@ -46,10 +50,6 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		return errors.Wrapf(err, "collecting source files from '%s'", base)
 	}
 
-	scriptName := fmt.Sprintf("^(.*[-|_])?%s(-|_)%s(-|_)(dml|dcl|ddl)([-|_].*)?\\.sql$", ev.TrackerID, ev.IssueID)
-
-	scriptNameRegexp := regexp.MustCompile(scriptName)
-
 	for _, source := range sources {
 
 		if !scriptNameRegexp.MatchString(path.Base(source)) {
@@ -57,14 +57,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		}
 
 		ss := scriptNameRegexp.FindStringSubmatch(path.Base(source))
-		if len(ss[1]) != 0 && (ss[1] != cfg.ApplicationID+"-" || ss[1] != cfg.ApplicationID+"_") {
-			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], cfg.ApplicationID)
+
+		if ss[1] != ev.TrackerID || ss[2] != ev.IssueID {
+			continue
 		}
 
-		targetName := path.Base(source)
-		if len(ss[1]) == 0 {
-			targetName = cfg.ApplicationID + "-" + targetName
-		}
+		fileName := fmt.Sprintf("%s-%s-%d-%s%s.sql", ss[1], ss[2], ev.Version, ss[3], ss[4])
+
+		targetName := path.Base(fileName)
 
 		log.Infof("processing source file '%s'", source)
 		target := targetSource + "/" + targetName
