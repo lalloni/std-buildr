@@ -125,7 +125,7 @@ Conteniendo `factura-blockchain-sql-eventual-redmine-dieccs-12334-1.zip`:
 factura-blockchain-sql-eventual-redmine-dieccs-12334-1-corregir-datos.sql
 ```
 
-### Caso oracle-sql-deffered
+### Caso oracle-sql-defered
 
 Proyecto:
 
