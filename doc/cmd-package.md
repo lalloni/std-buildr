@@ -200,3 +200,41 @@ src/
     004-ddl-drop-tabla-temporal.sql
 buildr.yaml
 ```
+
+Teniendo en `buildr.yaml`:
+
+```yaml
+system-id: "factura-blockchain"
+application-id: "factura-blockchain-sql-eventual"
+type: "oracle-sql-eventual"
+tracker-id: "redmine-dieccs"
+issue-id: "1234"
+package:
+  format: "zip"
+```
+
+Todo la estructura de fuentes se encuentra versionada en git e incluida en commits del branch actual.
+
+Se creó un tag denominado `redmine-dieccs-1234-1` apuntando al último commit del branch actual.
+
+Entonces, el comando:
+
+```sh
+buildr package
+```
+
+Producirá el archivo:
+
+```tree
+target/
+  factura-blockchain-sql-eventual-redmine-dieccs-1234-1.zip
+```
+
+Y la estructura de dicho archivo `factura-blockchain-sql-eventual-redmine-dieccs-1234-1.zip` será:
+
+```tree
+    redmine-dieccs-1234-1-001-ddl-create-tabla-temporal.sql
+    redmine-dieccs-1234-1-002-dcl-grants-tabla-temporal.sql
+    redmine-dieccs-1234-1-003-dml-extraccion-x.sql
+    redmine-dieccs-1234-1-004-ddl-drop-tabla-temporal.sql
+```
