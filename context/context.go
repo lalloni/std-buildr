@@ -5,8 +5,8 @@ type Context struct {
 	Artifacts []Artifact
 }
 
-func (c *Context) AddArtifact(file string, path string, isPrerelease bool) {
-	c.Artifacts = append(c.Artifacts, Artifact{File: file, Path: path, IsPrerelease: isPrerelease})
+func (c *Context) AddArtifact(file string, path string) {
+	c.Artifacts = append(c.Artifacts, Artifact{File: file, Path: path})
 }
 
 type Build struct {
@@ -29,7 +29,6 @@ func (p *Build) String() string {
 }
 
 type Artifact struct {
-	File         string
-	Path         string
-	IsPrerelease bool
+	File string
+	Path string
 }

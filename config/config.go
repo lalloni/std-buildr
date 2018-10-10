@@ -17,6 +17,9 @@ const (
 	TypeMicrosoftNetLib      = "microsoft-net-lib"
 	TypeGoWeb                = "go-web"
 	TypeGoCommand            = "go-command"
+	FormatZip                = "zip"
+	FormatTarGz              = "tar.gz"
+	FormatTarXz              = "tar.xz"
 )
 
 // Config es la configuración del proyecto
@@ -25,6 +28,18 @@ type Config struct {
 	ApplicationID string   `yaml:"application-id,omitempty"`
 	Type          string   `yaml:"type,omitempty"`
 	From          []string `yaml:"from,omitempty"`
+	Package       Package  `yaml:"package,omitempty"`
+}
+
+func (c *Config) GetPackageFormat() string {
+	if len(c.Package.Format) == 0 {
+		return FormatZip
+	}
+	return c.Package.Format
+}
+
+type Package struct {
+	Format string `yaml:"format,omitempty"`
 }
 
 func (c *Config) Validate() error {

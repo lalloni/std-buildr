@@ -109,7 +109,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		return errors.Wrapf(err, "packaging source files")
 	}
 
-	ctx.AddArtifact(packageName, targetPackage, (ev.Prerelease != "" || ctx.Build.Dirty()))
+	ctx.AddArtifact(packageName, targetPackage)
 
 	return nil
 }
