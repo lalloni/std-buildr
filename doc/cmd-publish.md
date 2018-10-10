@@ -1,36 +1,41 @@
-# Empaquetar versión de aplicación
+# Publicar versión
 
 ## Comando
 
-El comando `publish` creará un paquete estándar con la estructura adecuada según el tipo de proyecto indicado (segun como se especifica en el comando `package`) y lo publicara en nexus.
+El comando `publish` construye y publica una versión de una aplicación.
 
 ### Configuración
 
-* **repository**: Ruta del repositorio en nexus donde se publicara el artefacto.
+* **nexus.url**: URL base del servicio repositorio de artefactos. Opcional. Por defecto apunta a `https://nexus.cloudint.afip.gob.ar/nexus/repository`.
 
 ### Parámetros
 
-* **force**: Si es especificado el paquete sera publicado incluso si contiene commits posteriores al ultimo tag o modificaciones que se encuentren en el directorio de trabajo.
-* **trust**: Certificado de confianza en formato pem.  Opcional.
+* **trust**: Ubicación del archivo en formato PEM que contiene la cadenas de certificados de confianza. Opcional. Por defecto se utilizan los certificados confiables de AFIP de manera tal que se pueda publicar al Nexus de la organización.
 
 ### Comportamiento
 
-Este comando valida que el paquete a plublicar (creado al ejecutarse automaticamente el comando package) solo contenga al ultimo tag. 
+Este comando realiza los siguientes pasos:
 
-Si se encuentran commits posteriores a dicho tag o modificaciones en el directorio de trabajo el paquete solo se publicara si fue especificado el parametro `force`.
+1. Limpieza del directorio de construcción `target`
+2. Ejecución del [comando package](cmd-package.md)
+3. Publicación de los paquetes construidos en el paso anterior
 
-El paquete se publicara en la siguiente ruta:
+En el tercer paso el programa publica los artefactos construidos al repositorio correspondiente al sistema y al tipo de aplicación, incluyendo los archivos de verificación correspondientes (digestos MD5 y SHA1).
 
-    {repository}/{system-id}/{application-id}/{version-id}/{package}
+Para la publicación realizada en el paso 2 se calcula la ubicación de los paquetes en Nexus mediante el patrón:
+
+    /{system-id}-{repo-type}/{system-id}/{application-id}/{version-id}/
 
 Siendo:
 
-* **version-id**: Versión calculada al momento de crear el paquete.
-* **package**: Nombre y extención del paquete a ser publicado.
+* `{system-id}`: Identificador del sistema especificado en configuración
+* `{repo-type}`: Tipo de repositorio determinado según el tipo de aplicación configurado
+* `{application-id}`: Identificador de la aplicación especificado en configuración
+* `{version-id}`: Versión calculada al momento de crear el paquete
 
 ### Ejemplos
 
-#### Evolutivo
+#### SQL Evolutivo
 
 Estructura de fuentes:
 
@@ -54,12 +59,9 @@ Teniendo en `buildr.yaml`:
 system-id: "factura-blockchain"
 application-id: "factura-blockchain-sql"
 type: "oracle-sql-evolutional"
-package:
-  format: "zip"
 from:
   - "1.0.0"
   - "1.2.0"
-repository: "https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/"
 ```
 
 Se creó un tag denominado `v1.2.3` apuntando al último commit del branch actual.
@@ -67,7 +69,7 @@ Se creó un tag denominado `v1.2.3` apuntando al último commit del branch actua
 Entonces, el comando:
 
 ```sh
-buildr publish -trust ~/certs/homo.pem
+buildr publish
 ```
 
 Producirá los archivos:
@@ -79,13 +81,19 @@ target/
   factura-blockchain-sql-1.2.3-from-1.2.0.zip
 ```
 
-Los cuales seran publicados en las siguientes URLs:
+Estos archivos y sus digestos se publicarán en Nexus en las siguientes URLs:
 
     https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3.zip
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3.zip.md5
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3.zip.sha1
     https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3-from-1.0.0.zip
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3-from-1.0.0.zip.md5
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3-from-1.0.0.zip.sha1
     https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3-from-1.2.0.zip
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3-from-1.2.0.zip.md5
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql/1.2.3/factura-blockchain-sql-1.2.3-from-1.2.0.zip.sha1
 
-#### Diferido
+#### SQL Diferido
 
 Estructura de fuentes:
 
@@ -104,8 +112,6 @@ Teniendo en `buildr.yaml`:
 system-id: "factura-blockchain"
 application-id: "factura-blockchain-sql-process"
 type: "oracle-sql-deferred"
-package:
-  format: "zip"
 ```
 
 Todo la estructura de fuentes se encuentra versionada en git e incluida en commits del branch actual.
@@ -115,7 +121,7 @@ Se creó un tag denominado `v1.2.3` apuntando al último commit del branch actua
 Entonces, el comando:
 
 ```sh
-buildr publish -trust ~/certs/homo.pem
+buildr publish
 ```
 
 Producirá el archivo:
@@ -125,11 +131,15 @@ target/
   factura-blockchain-sql-process-1.2.3.zip
 ```
 
-El cual sera publicado en la siguiente URL:
+Este archivo y sus digestos se publicarán en Nexus en las siguientes URLs:
 
     https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql-process/1.2.3/factura-blockchain-sql-process-1.2.3.zip
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql-process/1.2.3/factura-blockchain-sql-process-1.2.3.zip.md5
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql-process/1.2.3/factura-blockchain-sql-process-1.2.3.zip.sha1
 
-#### Eventual
+#### SQL Eventual
+
+Estructura de fuentes:
 
 ```tree
 src/
@@ -149,18 +159,16 @@ application-id: "factura-blockchain-sql-eventual"
 type: "oracle-sql-eventual"
 tracker-id: "redmine-dieccs"
 issue-id: "1234"
-package:
-  format: "zip"
 ```
 
-Todo la estructura de fuentes se encuentra versionada en git e incluida en commits del branch actual.
+Toda la estructura de fuentes se encuentra versionada en git e incluida en commits del branch actual, denominado `redmine-dieccs-1234`.
 
 Se creó un tag denominado `redmine-dieccs-1234-1` apuntando al último commit del branch actual.
 
 Entonces, el comando:
 
 ```sh
-buildr publish -trust ~/certs/homo.pem
+buildr publish
 ```
 
 Producirá el archivo:
@@ -170,6 +178,8 @@ target/
   factura-blockchain-sql-eventual-redmine-dieccs-1234-1.zip
 ```
 
-El cual sera publicado en la siguiente URL:
+Este archivo y sus digestos se publicarán en Nexus en las siguientes URLs:
 
     https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql-eventual/redmine-dieccs-1234-1/factura-blockchain-sql-eventual-redmine-dieccs-1234-1.zip
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql-eventual/redmine-dieccs-1234-1/factura-blockchain-sql-eventual-redmine-dieccs-1234-1.zip.md5
+    https://nexus.cloudhomo.afip.gob.ar/nexus/repository/factura-blockchain-raw/factura-blockchain/factura-blockchain-sql-eventual/redmine-dieccs-1234-1/factura-blockchain-sql-eventual-redmine-dieccs-1234-1.zip.sha1

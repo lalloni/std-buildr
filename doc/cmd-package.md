@@ -18,7 +18,7 @@ El identificador generado tendrá la forma:
 
 Siendo:
 
-* `{base-version}`: Identificador de la versión, calculado a partir del nombre del último tag encontrado. Se calcula dependiendo del tipo de proyecto. Por ejemplo: "1.0.0" o "redmine-dieccs-1234".
+* `{base-version}`: Identificador de la versión, calculado a partir del nombre del último tag encontrado. Se calcula y se valida dependiendo del tipo de proyecto. Por ejemplo: "1.0.0" o "redmine-dieccs-1234".
 * `{count}`: Cantidad de commits encontrados en el branch actual desde el último tag. Sólo se agrega si se encuentran commits posteriores al último tag.
 * `{commit}`: Identificador del último commit encontrado en el branch actual. Sólo se agrega si se encuentran commits posteriores al último tag.
 * `-dirty`: Indicador de que el directorio de trabajo contiene modificaciones no capturadas en git. Sólo se agrega si se encontraran dichas modificaciones.
@@ -28,6 +28,35 @@ Siendo:
 * **package.format**: Formato del archivo empaquetado. Debe ser `tar.xz`, `tar.gz` o `zip`.
                       Opcional. De no estar especificado se utiliza el valor `zip`.
 * **from**: Lista de versiones preexistentes para las que se crearán paquetes incrementales. Solo es utilizado en los proyectos de tipo `oracle-sql-evolutional`. Opcional. De no estar especificado, no se crearán paquetes incrementales.
+
+### Parámetros
+
+* **allow-dirty**: Permite construir paquetes que contengan archivos modificados en el directorio de trabajo
+* **allow-untagged**: Permite construir paquetes que contengan commits posteriores al último tag
+
+### Comportamiento básico
+
+Este comando realiza los siguientes pasos:
+
+1. Limpieza del directorio de construcción `target`
+2. Cálculo de la versión según el nombre del último tag del branch
+3. Validaciones de estándares según el tipo de proyecto:
+    * Nombre del tag
+    * Nombre del branch
+    * Estado de código fuente
+    * Historia de commits
+4. Empaquetamiento
+
+Para el tercer paso se verifica que el código fuente desde el cual se contruyeron los paquetes no incluya modificaciones no capturadas en el último tag del branch. Esta verificación incluye validar la ausencia de:
+
+1. Commits posteriores al tag (se omite si se especifica `--allow-untagged`)
+2. Archivos nuevos o modificados en el directorio de trabajo (se omite si se especifica `--allow-dirty`)
+
+En este paso también se verifica que los nombres del tag y del branch cumplan con los requerimientos estándar específicos según el tipo de proyecto.
+
+Si no se cumple cualquier verificación de las anteriores, se cancela la construcción de los paquetes, se informa del problema al usuario y el programa termina con estado de error.
+
+El comportamiento del cuarto paso depende del tipo de proyecto y se describe a continuación:
 
 ### Comportamiento según tipo de proyecto
 
@@ -44,6 +73,8 @@ Los scripts SQL del directorio `src/sql/inc` serán incluidos en los paquetes in
 
 Todos los scripts SQL del directorio `src/sql/inc` son procesados reemplazando las directivas `@@` por el contenido de los archivos que las mismas referencien.
 
+Se valida que el tag cumpla con [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) y que tenga el caracter 'v' prefijado.
+
 Se valida que los nombres de los scripts cumplan con el estándar de nombres, abortando el proceso en caso de encontrar nombres incorrectos.
 
 Todos los scripts SQL incluidos son renombrados anteponiendo el identificador de la aplicación.
@@ -53,6 +84,8 @@ Si los nombres de los scripts fuente poseen el identificador de la aplicación c
 
 En este tipo de proyecto se crea un paquete que contiene todos los scripts SQL del directorio `src/sql`.
 
+Se valida que el tag cumpla con [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) y que tenga el caracter 'v' prefijado.
+
 Se valida que los nombres de los scripts cumplan con el estándar de nombres, abortando el proceso en caso de encontrar nombres incorrectos.
 
 Todos los scripts SQL incluidos son renombrados anteponiendo el identificador de la aplicación.
@@ -61,6 +94,26 @@ Si los nombres de los scripts fuente ya poseen el identificador de la aplicació
 #### SQL Eventual
 
 En este tipo de proyecto se crea un paquete que contiene todos los scripts SQL del directorio `src/sql`.
+
+Se valida que el nombre del branch comience con el patrón:
+
+    {tracker-id}-{issue-id}{custom}
+
+Siendo:
+
+* `{tracker-id}`: El identificador de la instancia del issue tracker
+* `{issue-id}`: El identificador del issue que da origen al eventual
+* `{custom}`: Una cadena opcional que se puede utilizar para organizar múltiples branches del mismo eventual o para agregar una descripción corta del motivo del eventual. Si se especifica **debe** comenzar con el caracter '-' o el caracter '/'.
+
+Se valida que el tag cumpla con el patrón:
+
+    {tracker-id}-{issue-id}-{version}
+
+Siendo:
+
+* `{tracker-id}`: El identificador de la instancia del issue tracker.
+* `{issue-id}`: El identificador del issue que da origen al eventual.
+* `{version}`: El identificador de la versión del eventual. Debe ser un número entero basado en 1 que se incrementa para cada versión.
 
 Se valida que los nombres de los scripts cumplan con el estándar de nombres, abortando el proceso en caso de encontrar nombres incorrectos.
 
@@ -93,8 +146,6 @@ Teniendo en `buildr.yaml`:
 system-id: "factura-blockchain"
 application-id: "factura-blockchain-sql"
 type: "oracle-sql-evolutional"
-package:
-  format: "zip"
 from:
   - "1.0.0"
   - "1.2.0"
@@ -160,8 +211,6 @@ Teniendo en `buildr.yaml`:
 system-id: "factura-blockchain"
 application-id: "factura-blockchain-sql-process"
 type: "oracle-sql-deferred"
-package:
-  format: "zip"
 ```
 
 Todo la estructura de fuentes se encuentra versionada en git e incluida en commits del branch actual.
@@ -191,6 +240,8 @@ factura-blockchain-sql-process-y-una-tarea-mas.sql
 
 #### Eventual
 
+Estructura de fuentes:
+
 ```tree
 src/
   sql/
@@ -209,13 +260,11 @@ application-id: "factura-blockchain-sql-eventual"
 type: "oracle-sql-eventual"
 tracker-id: "redmine-dieccs"
 issue-id: "1234"
-package:
-  format: "zip"
 ```
 
 Todo la estructura de fuentes se encuentra versionada en git e incluida en commits del branch actual.
 
-Se creó un tag denominado `redmine-dieccs-1234-1` apuntando al último commit del branch actual.
+Se creó un tag denominado `redmine-dieccs-1234-1`, ya que es la versión "1" del eventual originado en la petición "1234" de la instancia de Redmine llamada "redmine-dieccs", apuntando al último commit del branch actual.
 
 Entonces, el comando:
 
@@ -233,8 +282,8 @@ target/
 Y la estructura de dicho archivo `factura-blockchain-sql-eventual-redmine-dieccs-1234-1.zip` será:
 
 ```tree
-    redmine-dieccs-1234-1-001-ddl-create-tabla-temporal.sql
-    redmine-dieccs-1234-1-002-dcl-grants-tabla-temporal.sql
-    redmine-dieccs-1234-1-003-dml-extraccion-x.sql
-    redmine-dieccs-1234-1-004-ddl-drop-tabla-temporal.sql
+redmine-dieccs-1234-1-001-ddl-create-tabla-temporal.sql
+redmine-dieccs-1234-1-002-dcl-grants-tabla-temporal.sql
+redmine-dieccs-1234-1-003-dml-extraccion-x.sql
+redmine-dieccs-1234-1-004-ddl-drop-tabla-temporal.sql
 ```
