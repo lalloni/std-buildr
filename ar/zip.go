@@ -7,7 +7,7 @@ import (
 )
 
 func NewZip(target string) (Archiver, error) {
-	w, err := os.Open(target)
+	w, err := os.Create(target)
 	if err != nil {
 		return nil, err
 	}

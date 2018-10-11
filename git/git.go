@@ -1,6 +1,8 @@
 package git
 
 import (
+	"regexp"
+
 	"github.com/pkg/errors"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
@@ -43,5 +45,27 @@ func DescribeVersionInCWD() (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "getting git description: %s", s)
 	}
+	return s, nil
+}
+
+func ListUntrackedFilesAndChangedFiles() ([]string, error) {
+	re := regexp.MustCompile(`\r?\n`)
+
+	s := []string{}
+
+	changed, err := sh.Output("git", "diff-files", "--name-only")
+	if err != nil {
+		return s, errors.Wrapf(err, "listing changed files from git: %s", changed)
+	}
+
+	s = append(s, re.Split(changed, -1)...)
+
+	untrackedFiles, err := sh.Output("git", "ls-files", "--exclude-standard", "--others")
+	if err != nil {
+		return s, errors.Wrapf(err, "listing untracked files from git: %s", untrackedFiles)
+	}
+
+	s = append(s, re.Split(untrackedFiles, -1)...)
+
 	return s, nil
 }

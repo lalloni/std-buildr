@@ -25,7 +25,7 @@ func (p *Build) Dirty() bool {
 }
 
 func (p *Build) Untagged() bool {
-	return !untaggedVersionRegex.MatchString(p.Version)
+	return untaggedVersionRegex.MatchString(p.Version)
 }
 
 func (p *Build) String() string {

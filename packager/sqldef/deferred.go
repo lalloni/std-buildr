@@ -6,14 +6,17 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/msg"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 )
@@ -25,19 +28,36 @@ var (
 
 func Package(cfg *config.Config, ctx *context.Context) error {
 
-	git.GetStateIn(ctx)
-
 	v := tagNameRegexp.FindStringSubmatch(ctx.Build.Version)
 	if v == nil {
 		return errors.Errorf("tag name must be prefixed with a 'v' character (found '%s')", ctx.Build.Version)
 	}
 	ctx.Build.Version = v[1]
 
-	_, err := version.ParseSemanticVersion(ctx.Build.Version)
+	ev, err := version.ParseSemanticVersion(ctx.Build.Version)
 	if err != nil {
 		return errors.Wrap(err, "checking valid semantic version")
 	}
 
+	version := fmt.Sprintf("%d.%d.%d", ev.Major(), ev.Minor(), ev.Patch())
+
+	allowDirty := viper.GetBool("buildr.allow-dirty")
+	if ctx.Build.Dirty() && !allowDirty {
+		untrackedAndChangedFiles, err := git.ListUntrackedFilesAndChangedFiles()
+		if err != nil {
+			return errors.Wrap(err, "checking untracked and changed files")
+		}
+		uu := strings.Join(untrackedAndChangedFiles, " ")
+		if uu == "" {
+			return errors.Errorf(msg.PACKAGE_COMMITED_ERROR, version, version, version)
+		}
+		return errors.Errorf(msg.PACKAGE_UNTRACKER_ERROR, uu, version, version, version)
+	}
+
+	allowUntagged := viper.GetBool("buildr.allow-untagged")
+	if ctx.Build.Untagged() && !allowUntagged {
+		return errors.Errorf(msg.PACKAGE_UNTAGGED_ERROR, version, version, version)
+	}
 	const targetSource = "target/source"
 	err = os.MkdirAll(targetSource, 0775)
 	if err != nil {
@@ -66,10 +86,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 		targetName := path.Base(source)
 
-		exp := fmt.Sprintf("^%s-(.*)$", cfg.ApplicationID)
-		appDeferredRegexp := regexp.MustCompile(exp)
-
-		if !appDeferredRegexp.MatchString(path.Base(source)) {
+		if !strings.HasPrefix(targetName, cfg.ApplicationID) {
 			targetName = cfg.ApplicationID + "-" + targetName
 		}
 
@@ -105,10 +122,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	packageName := fmt.Sprintf("%s-%s.tar.xz", cfg.ApplicationID, ctx.Build.String())
+	format, err := ar.FormatDefault(cfg.Package.Format, ar.ZipFormat)
+	if err != nil {
+		return errors.Wrapf(err, "invalid package format '%s' in configuration", cfg.Package.Format)
+	}
+	packageName := format.AddExt(fmt.Sprintf("%s-%s", cfg.ApplicationID, ctx.Build.String()))
 	targetPackage := fmt.Sprintf("target/%s", packageName)
 	log.Infof("writing to '%s'", targetPackage)
-	err = ar.TarXz(targetPackage, targetSources, path.Base)
+	err = ar.Package(format, targetPackage, targetSources)
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}
