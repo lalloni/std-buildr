@@ -40,7 +40,15 @@ var packageCmd = &cobra.Command{
 }
 
 func init() {
+
+	packageCmd.PersistentFlags().BoolP("allow-dirty", "d", false, "Allow build packages that contain modified files in the working directory")
+	must(viper.BindPFlag("buildr.allow-dirty", packageCmd.PersistentFlags().Lookup("allow-dirty")))
+
+	packageCmd.PersistentFlags().BoolP("allow-untagged", "u", false, "Allow build packages that contain that contain commits after the last tag")
+	must(viper.BindPFlag("buildr.allow-untagged", packageCmd.PersistentFlags().Lookup("allow-untagged")))
+
 	rootCmd.AddCommand(packageCmd)
+
 }
 
 func runPackage(ctx *context.Context) error {

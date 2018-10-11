@@ -12,6 +12,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
@@ -24,7 +25,7 @@ import (
 var (
 	tagNameRegexp     = regexp.MustCompile(`^v(.*)$`)
 	includeRegexp     = regexp.MustCompile(`^@@(.*)$`)
-	evolutionalRegexp = regexp.MustCompile(`^(.+[-|_])?([0-9]{6,})(-|_)(dml|dcl|ddl)([-|_].+)?\.sql$`)
+	evolutionalRegexp = regexp.MustCompile(`^(.+[-_])?([0-9]{6,})[-_](dml|dcl|ddl)([-_].+)?\.sql$`)
 )
 
 func Package(cfg *config.Config, ctx *context.Context) error {
@@ -40,6 +41,16 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	ev, err := version.ParseSemanticVersion(ctx.Build.Version)
 	if err != nil {
 		return errors.Wrap(err, "checking valid semantic version")
+	}
+
+	allowUntagged := viper.GetBool("buildr.allow-untagged")
+	if len(ev.Prerelease()) > 0 && !allowUntagged {
+		return errors.Errorf("found commits after the last tag. To dismiss this error rerun with --allow-untagged parameter")
+	}
+
+	allowDirty := viper.GetBool("buildr.allow-dirty")
+	if ctx.Build.Dirty() && !allowDirty {
+		return errors.Errorf("found changes in working copy. To dismiss this error rerun with --allow-dirty parameter")
 	}
 
 	const targetSource = "target/source"
@@ -128,14 +139,18 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	packageName := fmt.Sprintf("%s-%s.tar.xz", cfg.ApplicationID, ctx.Build.String())
+	format, err := ar.FormatDefault(cfg.Package.Format, ar.ZipFormat)
+	if err != nil {
+		return errors.Wrapf(err, "invalid package format '%s' in configuration", cfg.Package.Format)
+	}
+	packageName := format.AddExt(fmt.Sprintf("%s-%s", cfg.ApplicationID, ctx.Build.String()))
 	targetPackage := fmt.Sprintf("target/%s", packageName)
 	log.Infof("writing to '%s'", targetPackage)
-	err = ar.TarXz(targetPackage, targetSources, path.Base)
+	err = ar.Package(format, targetPackage, targetSources)
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}
-	ctx.AddArtifact(packageName, targetPackage, (ev.Prerelease() != "" || ctx.Build.Dirty()))
+	ctx.AddArtifact(packageName, targetPackage)
 
 	// package incrementals
 	if len(cfg.From) > 0 {
@@ -160,14 +175,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 			for _, v := range include {
 				targetSources = append(targetSources, v)
 			}
-			packageName := fmt.Sprintf("%s-%s-from-%s.tar.xz", cfg.ApplicationID, ctx.Build.String(), from)
+			packageName := format.AddExt(fmt.Sprintf("%s-%s-from-%s", cfg.ApplicationID, ctx.Build.String(), from))
 			targetPackage := fmt.Sprintf("target/%s", packageName)
 			log.Infof("writing to '%s'", targetPackage)
-			err = ar.TarXz(targetPackage, targetSources, path.Base)
+			err = ar.Package(format, targetPackage, targetSources)
 			if err != nil {
 				return errors.Wrapf(err, "packaging source files")
 			}
-			ctx.AddArtifact(packageName, targetPackage, (ev.Prerelease() != "" || ctx.Build.Dirty()))
+			ctx.AddArtifact(packageName, targetPackage)
 		}
 	}
 

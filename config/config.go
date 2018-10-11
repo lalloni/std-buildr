@@ -25,6 +25,11 @@ type Config struct {
 	ApplicationID string   `yaml:"application-id,omitempty"`
 	Type          string   `yaml:"type,omitempty"`
 	From          []string `yaml:"from,omitempty"`
+	Package       Package  `yaml:"package,omitempty"`
+}
+
+type Package struct {
+	Format string `yaml:"format,omitempty"`
 }
 
 func (c *Config) Validate() error {

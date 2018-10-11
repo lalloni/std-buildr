@@ -33,7 +33,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	}
 	ctx.Build.Version = v[1]
 
-	ev, err := version.ParseSemanticVersion(ctx.Build.Version)
+	_, err := version.ParseSemanticVersion(ctx.Build.Version)
 	if err != nil {
 		return errors.Wrap(err, "checking valid semantic version")
 	}
@@ -112,7 +112,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}
-	ctx.AddArtifact(packageName, targetPackage, (ev.Prerelease() != "" || ctx.Build.Dirty()))
+	ctx.AddArtifact(packageName, targetPackage)
 
 	return nil
 }
