@@ -7,37 +7,68 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
 	"github.com/ulikunitz/xz"
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 )
 
-func Compress(cfg *config.Config, targetPackage string, targetSources []string) error {
+var UnknownFormat = errors.New("unknown format")
 
-	switch cfg.GetPackageFormat() {
-	case config.FormatTarXz:
-		err := TarXz(targetPackage, targetSources, path.Base)
-		if err != nil {
-			return errors.Wrapf(err, "packaging (tar.xz) source files")
-		}
-		return nil
-	case config.FormatTarGz:
-		err := TarGz(targetPackage, targetSources, path.Base)
-		if err != nil {
-			return errors.Wrapf(err, "packaging (tar.gz) source files")
-		}
-		return nil
-	case config.FormatZip:
-		err := Zip(targetPackage, targetSources, path.Base)
-		if err != nil {
-			return errors.Wrapf(err, "packaging (zip) source files")
-		}
-		return nil
+type format string
+
+var (
+	TarXzFormat format = "tar.xz"
+	TarGzFormat format = "tar.gz"
+	ZipFormat   format = "zip"
+)
+
+func (f *format) AddExt(name string) string {
+	return name + "." + string(*f)
+}
+
+func (f *format) ChangeExt(name string) string {
+	return f.AddExt(strings.TrimSuffix(name, filepath.Ext(name)))
+}
+
+func Format(s string) (format, error) {
+	switch s {
+	case string(TarGzFormat):
+		return TarGzFormat, nil
+	case string(TarXzFormat):
+		return TarXzFormat, nil
+	case string(ZipFormat):
+		return ZipFormat, nil
 	default:
-		return errors.Errorf("Packager not available for project type %q", cfg.Package.Format)
+		return "", UnknownFormat
 	}
+}
+
+func FormatDefault(s string, def format) (format, error) {
+	if s == "" {
+		return def, nil
+	}
+	return Format(s)
+}
+
+func Package(targetFormat format, target string, files []string) error {
+	var err error
+	switch targetFormat {
+	case TarXzFormat:
+		err = TarXz(target, files, path.Base)
+	case TarGzFormat:
+		err = TarGz(target, files, path.Base)
+	case ZipFormat:
+		err = Zip(target, files, path.Base)
+	default:
+		return UnknownFormat
+	}
+	if err != nil {
+		return errors.Wrapf(err, "packaging files in %s", targetFormat)
+	}
+	return nil
 }
 
 func TarXz(target string, files []string, namer func(name string) string) error {
@@ -137,45 +168,38 @@ func Zip(target string, files []string, namer func(name string) string) error {
 	if err != nil {
 		return errors.Wrapf(err, "creating target package file")
 	}
-
 	defer w.Close()
-
 	zipw := zip.NewWriter(w)
 	defer zipw.Close()
-
 	for _, file := range files {
 		log.Infof("packaging processed file '%s'", file)
-
 		in, err := os.Open(file)
 		if err != nil {
 			return errors.Wrapf(err, "opening processed file '%s'", file)
 		}
 		defer in.Close()
-
 		info, err := in.Stat()
 		if err != nil {
 			return err
 		}
-
 		h, err := zip.FileInfoHeader(info)
 		if err != nil {
 			return errors.Wrapf(err, "getting info for processed file '%s'", file)
 		}
-
 		h.Name = namer(file)
 		h.Method = zip.Deflate
-
 		writer, err := zipw.CreateHeader(h)
 		if err != nil {
 			return errors.Wrapf(err, "writing zip header for processed file '%s'", file)
 		}
 		if _, err = io.Copy(writer, in); err != nil {
-			return err
-		}
-		in.Close()
-		if err != nil {
 			return errors.Wrapf(err, "copying processed file '%s' data", file)
 		}
+		in.Close()
+	}
+	err = zipw.Close()
+	if err != nil {
+		return errors.Wrapf(err, "writing package file '%s'", target)
 	}
 	return nil
 

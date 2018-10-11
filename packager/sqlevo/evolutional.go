@@ -139,10 +139,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	packageName := fmt.Sprintf("%s-%s.%s", cfg.ApplicationID, ctx.Build.String(), cfg.GetPackageFormat())
+	format, err := ar.FormatDefault(cfg.Package.Format, ar.ZipFormat)
+	if err != nil {
+		return errors.Wrapf(err, "invalid package format '%s' in configuration", cfg.Package.Format)
+	}
+	packageName := format.AddExt(fmt.Sprintf("%s-%s", cfg.ApplicationID, ctx.Build.String()))
 	targetPackage := fmt.Sprintf("target/%s", packageName)
 	log.Infof("writing to '%s'", targetPackage)
-	err = ar.Compress(cfg, targetPackage, targetSources)
+	err = ar.Package(format, targetPackage, targetSources)
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}
@@ -171,10 +175,10 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 			for _, v := range include {
 				targetSources = append(targetSources, v)
 			}
-			packageName := fmt.Sprintf("%s-%s-from-%s.%s", cfg.ApplicationID, ctx.Build.String(), from, cfg.GetPackageFormat())
+			packageName := format.AddExt(fmt.Sprintf("%s-%s-from-%s", cfg.ApplicationID, ctx.Build.String(), from))
 			targetPackage := fmt.Sprintf("target/%s", packageName)
 			log.Infof("writing to '%s'", targetPackage)
-			err = ar.Compress(cfg, targetPackage, targetSources)
+			err = ar.Package(format, targetPackage, targetSources)
 			if err != nil {
 				return errors.Wrapf(err, "packaging source files")
 			}
