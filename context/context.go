@@ -1,5 +1,9 @@
 package context
 
+import "regexp"
+
+var untaggedVersionRegex = regexp.MustCompile(`.*-\d+-g[0-9a-f]{40}$`)
+
 type Context struct {
 	Build     Build
 	Artifacts []Artifact
@@ -18,6 +22,10 @@ type Build struct {
 
 func (p *Build) Dirty() bool {
 	return p.Untracked || p.Uncommited || p.Changed
+}
+
+func (p *Build) Untagged() bool {
+	return !untaggedVersionRegex.MatchString(p.Version)
 }
 
 func (p *Build) String() string {
