@@ -41,6 +41,8 @@ var packageCmd = &cobra.Command{
 
 func init() {
 
+	initConfig()
+
 	packageCmd.PersistentFlags().BoolP("allow-dirty", "d", false, "Allow build packages that contain modified files in the working directory")
 	must(viper.BindPFlag("buildr.allow-dirty", packageCmd.PersistentFlags().Lookup("allow-dirty")))
 

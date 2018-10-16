@@ -18,6 +18,7 @@ var publishCmd = &cobra.Command{
 }
 
 func init() {
+	initConfig()
 	publishCmd.PersistentFlags().StringP("trust", "t", "", "File path with trusted certificate chain (in PEM format)")
 	must(viper.BindPFlag("buildr.trust", publishCmd.PersistentFlags().Lookup("trust")))
 

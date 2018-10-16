@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -46,6 +47,40 @@ func DescribeVersionInCWD() (string, error) {
 		return "", errors.Wrapf(err, "getting git description: %s", s)
 	}
 	return s, nil
+}
+
+func Initialize() error {
+	return sh.Run("git", "init")
+}
+
+func AddRemote(remote string) error {
+	return sh.Run("git", "remote", "add", "origin", remote)
+}
+
+func Add(s string) error {
+	return sh.Run("git", "add", s)
+}
+
+func AddAll() ([]string, error) {
+	fs, err := ListUntrackedFilesAndChangedFiles()
+
+	if err != nil {
+		return fs, errors.Wrapf(err, "listing untracked and changed files")
+	}
+
+	for _, element := range fs {
+		err = Add(element)
+		if err != nil {
+			return fs, err
+		}
+	}
+
+	return fs, nil
+}
+
+func Commit(m string) error {
+	msg := fmt.Sprintf("'%s'", m)
+	return sh.Run("git", "commit", "-m", msg)
 }
 
 func ListUntrackedFilesAndChangedFiles() ([]string, error) {

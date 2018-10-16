@@ -24,6 +24,8 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 )
 
+const excludedFile = "readme.md"
+
 var (
 	tagNameRegexp     = regexp.MustCompile(`^v(.*)$`)
 	includeRegexp     = regexp.MustCompile(`^@@(.*)$`)
@@ -84,6 +86,10 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	}
 
 	for _, source := range sources {
+
+		if path.Base(source) == excludedFile {
+			continue
+		}
 
 		if !evolutionalRegexp.MatchString(path.Base(source)) {
 			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, evolutionalRegexp.String())
