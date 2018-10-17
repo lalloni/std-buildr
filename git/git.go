@@ -61,17 +61,34 @@ func Add(s string) error {
 	return sh.Run("git", "add", s)
 }
 
+func CreateBranch(name string) error {
+	return sh.Run("git", "checkout", "-b", name)
+}
+func CreateBranchFrom(name string, from string) error {
+	return sh.Run("git", "checkout", "-b", name, from)
+}
+
+func CheckExistingBranch(name string) bool {
+	return sh.Run("git", "rev-parse", "--verify", name) == nil
+}
+
 func AddAll() error {
 	fs, err := ListUntrackedFilesAndChangedFiles()
 	if err != nil {
 		return errors.Wrapf(err, "listing untracked and changed files")
 	}
-	for _, f := range fs {
-		if err = Add(f); err != nil {
-			return errors.Wrapf(err, "adding file '%s' to git index", f)
+
+	for _, element := range fs {
+
+		err = Add(element)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
+}
+func Push(remote string, branch string) error {
+	return sh.Run("git", "push", remote, branch)
 }
 
 func Commit(m string) error {
