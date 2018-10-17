@@ -16,6 +16,7 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/msg"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
@@ -79,6 +80,10 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	}
 
 	for _, source := range sources {
+
+		if path.Base(source) == templates.README {
+			continue
+		}
 
 		if !deferredRegexp.MatchString(path.Base(source)) {
 			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, deferredRegexp.String())
