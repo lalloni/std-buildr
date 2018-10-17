@@ -97,3 +97,15 @@ func New(cfg *config.Config) (Initializer, error) {
 		return nil, errors.Errorf("Initializer not available for project type '%s'", cfg.Type)
 	}
 }
+
+func CreateEventual(cfg *config.Config) error {
+
+	cfg.IssueID = viper.GetString("buildr.issue-id")
+
+	if cfg.IssueID == "" {
+		return errors.Errorf("issue id is required")
+	}
+
+	return sqleve.CreateEventual(cfg)
+
+}
