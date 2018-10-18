@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
@@ -18,6 +19,7 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/msg"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 )
@@ -30,8 +32,6 @@ var (
 
 func Package(cfg *config.Config, ctx *context.Context) error {
 
-	git.GetStateIn(ctx)
-
 	v := tagNameRegexp.FindStringSubmatch(ctx.Build.Version)
 	if v == nil {
 		return errors.Errorf("tag name must be prefixed with a 'v' character (found '%s')", ctx.Build.Version)
@@ -43,14 +43,24 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		return errors.Wrap(err, "checking valid semantic version")
 	}
 
-	allowUntagged := viper.GetBool("buildr.allow-untagged")
-	if len(ev.Prerelease()) > 0 && !allowUntagged {
-		return errors.Errorf("found commits after the last tag. To dismiss this error rerun with --allow-untagged parameter")
-	}
+	version := fmt.Sprintf("%d.%d.%d", ev.Major(), ev.Minor(), ev.Patch())
 
 	allowDirty := viper.GetBool("buildr.allow-dirty")
 	if ctx.Build.Dirty() && !allowDirty {
-		return errors.Errorf("found changes in working copy. To dismiss this error rerun with --allow-dirty parameter")
+		untrackedAndChangedFiles, err := git.ListUntrackedFilesAndChangedFiles()
+		if err != nil {
+			return errors.Wrap(err, "checking untracked and changed files")
+		}
+		uu := strings.Join(untrackedAndChangedFiles, " ")
+		if uu == "" {
+			return errors.Errorf(msg.PACKAGE_COMMITED_ERROR, version, version, version)
+		}
+		return errors.Errorf(msg.PACKAGE_UNTRACKER_ERROR, uu, version, version, version)
+	}
+
+	allowUntagged := viper.GetBool("buildr.allow-untagged")
+	if ctx.Build.Untagged() && !allowUntagged {
+		return errors.Errorf(msg.PACKAGE_UNTAGGED_ERROR, version, version, version)
 	}
 
 	const targetSource = "target/source"
