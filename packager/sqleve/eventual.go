@@ -6,25 +6,61 @@ import (
 	"os"
 	"path"
 	"regexp"
-
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/ar"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/msg"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 )
 
 const targetSource = "target/source"
+
+var (
+	eventualRegexp = regexp.MustCompile(`^(?:(.*)([-_]))?(\d{3,})([-_])(dml|dcl|ddl)(?:([-_])(.+))?\.sql$`)
+)
 
 func Package(cfg *config.Config, ctx *context.Context) error {
 
 	ev, err := version.ParseEventualVersion(ctx.Build.Version)
 	if err != nil {
 		return errors.Wrap(err, "checking eventual version")
+	}
+
+	tagVersion := fmt.Sprintf("%s-%s-%d", ev.TrackerID, ev.IssueID, ev.Version)
+	configVersion := fmt.Sprintf("%s-%s-%d", cfg.TrackerID, cfg.IssueID, ev.Version)
+	if ev.TrackerID != cfg.TrackerID {
+
+		return errors.Errorf(msg.PACKAGE_EVENTUAL_INVALID_TRACKER, ev.TrackerID, tagVersion, cfg.TrackerID, configVersion, configVersion, tagVersion, tagVersion)
+	}
+	if ev.IssueID != cfg.IssueID {
+
+		return errors.Errorf(msg.PACKAGE_EVENTUAL_INVALID_ISSUE, ev.IssueID, tagVersion, cfg.IssueID, configVersion, configVersion, tagVersion, tagVersion)
+	}
+
+	allowDirty := viper.GetBool("buildr.allow-dirty")
+	if ctx.Build.Dirty() && !allowDirty {
+		untrackedAndChangedFiles, err := git.ListUntrackedFilesAndChangedFiles()
+		if err != nil {
+			return errors.Wrap(err, "checking untracked and changed files")
+		}
+		uu := strings.Join(untrackedAndChangedFiles, " ")
+		if uu == "" {
+			return errors.Errorf(msg.PACKAGE_EVENTUAL_COMMITED_ERROR, tagVersion, tagVersion, tagVersion)
+		}
+		return errors.Errorf(msg.PACKAGE_EVENTUAL_UNTRACKER_ERROR, uu, cfg.TrackerID, cfg.IssueID, tagVersion, tagVersion, tagVersion)
+	}
+
+	allowUntagged := viper.GetBool("buildr.allow-untagged")
+	if ctx.Build.Untagged() && !allowUntagged {
+		return errors.Errorf(msg.PACKAGE_EVENTUAL_UNTAGGED_ERROR, cfg.TrackerID, cfg.IssueID, cfg.TrackerID, cfg.IssueID, tagVersion, tagVersion, tagVersion)
 	}
 
 	err = os.MkdirAll(targetSource, 0775)
@@ -46,24 +82,32 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 		return errors.Wrapf(err, "collecting source files from '%s'", base)
 	}
 
-	scriptName := fmt.Sprintf("^(.*[-|_])?%s(-|_)%s(-|_)(dml|dcl|ddl)([-|_].*)?\\.sql$", ev.TrackerID, ev.IssueID)
-
-	scriptNameRegexp := regexp.MustCompile(scriptName)
-
 	for _, source := range sources {
 
-		if !scriptNameRegexp.MatchString(path.Base(source)) {
-			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, scriptNameRegexp.String())
+		if !eventualRegexp.MatchString(path.Base(source)) {
+			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, eventualRegexp.String())
 		}
 
-		ss := scriptNameRegexp.FindStringSubmatch(path.Base(source))
-		if len(ss[1]) != 0 && (ss[1] != cfg.ApplicationID+"-" || ss[1] != cfg.ApplicationID+"_") {
-			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], cfg.ApplicationID)
+		ss := eventualRegexp.FindStringSubmatch(path.Base(source))
+		tag := fmt.Sprintf("%s-%s-%d", ev.TrackerID, ev.IssueID, ev.Version)
+		if len(ss[1]) != 0 && (ss[1] != tag) {
+			tag2 := fmt.Sprintf("%s_%s_%d", ev.TrackerID, ev.IssueID, ev.Version)
+			if ss[1] != tag2 {
+				return errors.Errorf("source file '%s' name prefix '%s' must equal tag '%s' if used", source, ss[1], tag)
+			}
+			fn := fmt.Sprintf("%s-%s-%s-%s.sql", tag, ss[3], ss[5], ss[7])
+			log.Warnf(msg.PACKAGE_EVENTUAL_FILENAME_WARN, ss[0], fn)
+		} else {
+			if ss[2] == "_" || ss[4] == "_" || ss[6] == "_" {
+				fn := fmt.Sprintf("%s-%s-%s-%s.sql", tag, ss[3], ss[5], ss[7])
+				log.Warnf(msg.PACKAGE_EVENTUAL_FILENAME_WARN, ss[0], fn)
+			}
+
 		}
 
 		targetName := path.Base(source)
 		if len(ss[1]) == 0 {
-			targetName = cfg.ApplicationID + "-" + targetName
+			targetName = tag + "-" + targetName
 		}
 
 		log.Infof("processing source file '%s'", source)
@@ -101,10 +145,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "collecting preprocessed files from '%s'", targetSource)
 	}
-	packageName := fmt.Sprintf("%s-%s.tar.xz", cfg.ApplicationID, ctx.Build.String())
+	format, err := ar.FormatDefault(cfg.Package.Format, ar.ZipFormat)
+	if err != nil {
+		return errors.Wrapf(err, "invalid package format '%s' in configuration", cfg.Package.Format)
+	}
+	packageName := format.AddExt(fmt.Sprintf("%s-%s", cfg.ApplicationID, ctx.Build.String()))
 	targetPackage := fmt.Sprintf("target/%s", packageName)
 	log.Infof("writing to '%s'", targetPackage)
-	err = ar.TarXz(targetPackage, targetSources, path.Base)
+	err = ar.Package(format, targetPackage, targetSources)
 	if err != nil {
 		return errors.Wrapf(err, "packaging source files")
 	}

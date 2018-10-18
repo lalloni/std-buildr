@@ -25,6 +25,8 @@ type Config struct {
 	ApplicationID string   `yaml:"application-id,omitempty"`
 	Type          string   `yaml:"type,omitempty"`
 	From          []string `yaml:"from,omitempty"`
+	TrackerID     string   `yaml:"tracker-id,omitempty"`
+	IssueID       string   `yaml:"issue-id,omitempty"`
 	Package       Package  `yaml:"package,omitempty"`
 }
 
