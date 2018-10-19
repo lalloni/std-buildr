@@ -2,62 +2,44 @@ package sqlevo
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/filesContent"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 )
 
-const (
-	incFolder = "src/sql/inc"
-	repFolder = "src/sql/rep"
+var (
+	incFolder = filepath.Join("src", "sql", "inc")
+	repFolder = filepath.Join("src", "sql", "rep")
 )
 
 func Initialize(cfg *config.Config) error {
 
-	err := os.MkdirAll(incFolder, 0775)
-	if err != nil {
-		return errors.Wrapf(err, "creating directory")
+	if err := os.MkdirAll(incFolder, 0775); err != nil {
+		return errors.Wrap(err, "creating incremental sources directory")
 	}
 
-	incReadme, err := os.Create(incFolder + "/readme.md")
-	if err != nil {
-		return errors.Wrapf(err, "creating %s", incFolder+"/readme.md")
-	}
-	defer incReadme.Close()
-
-	_, err = incReadme.Write([]byte(filesContent.README_INC))
-	if err != nil {
-		return errors.Wrapf(err, "writing %s", incFolder+"/readme.md")
+	p := filepath.Join(incFolder, templates.README)
+	if err := templates.RenderIncrementalReadme(cfg, p); err != nil {
+		return errors.Wrapf(err, "creating %s", p)
 	}
 
-	err = os.MkdirAll(repFolder, 0775)
-	if err != nil {
-		return errors.Wrapf(err, "creating directory")
+	if err := os.MkdirAll(repFolder, 0775); err != nil {
+		return errors.Wrap(err, "creating replaceable sources directory")
 	}
 
-	repReadme, err := os.Create(repFolder + "/readme.md")
-	if err != nil {
-		return errors.Wrapf(err, "creating %s", repFolder+"/readme.md")
-	}
-	defer repReadme.Close()
-
-	_, err = repReadme.Write([]byte(filesContent.README_REP))
-	if err != nil {
-		return errors.Wrapf(err, "writing %s", repFolder+"/readme.md")
+	p = filepath.Join(repFolder, templates.README)
+	if err := templates.RenderReplaceableReadme(cfg, p); err != nil {
+		return errors.Wrapf(err, "creating %s", p)
 	}
 
-	uu, err := git.AddAll()
-	if err != nil {
-		return errors.Wrapf(err, "adding  %s", uu)
-	}
-
-	err = git.Commit("First Commit by std-buildr")
-	if err != nil {
-		return errors.Wrapf(err, "commiting")
+	if err := git.CommitAddingAll("Crea estructura de proyecto evolutivo (std-buildr)"); err != nil {
+		return errors.Wrap(err, "creating sql evolutional commit in git")
 	}
 
 	return nil
+
 }

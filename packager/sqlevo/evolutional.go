@@ -19,12 +19,11 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/msg"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
 )
-
-const excludedFile = "readme.md"
 
 var (
 	tagNameRegexp     = regexp.MustCompile(`^v(.*)$`)
@@ -87,7 +86,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 	for _, source := range sources {
 
-		if path.Base(source) == excludedFile {
+		if path.Base(source) == templates.README {
 			continue
 		}
 

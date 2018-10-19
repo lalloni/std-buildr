@@ -2,18 +2,18 @@ package initializer
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
-	"github.com/apex/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/filesContent"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/sqlevo"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 )
 
 type Initializer interface {
@@ -27,12 +27,12 @@ func (f InitializerFunc) Initialize(cfg *config.Config) error {
 	cfg.SystemID = viper.GetString("buildr.system-id")
 
 	if cfg.SystemID == "" {
-		return errors.Errorf("system id is required")
+		return errors.New("system id is required")
 	}
 
 	cfg.ApplicationID = viper.GetString("buildr.application-id")
 	if cfg.ApplicationID == "" {
-		return errors.Errorf("application id is required")
+		return errors.New("application id is required")
 	}
 
 	if !strings.HasPrefix(cfg.ApplicationID, cfg.SystemID) {
@@ -41,62 +41,45 @@ func (f InitializerFunc) Initialize(cfg *config.Config) error {
 
 	cfg.Type = viper.GetString("buildr.type")
 	if cfg.Type == "" {
-		return errors.Errorf("Type is required")
+		return errors.New("project type is required")
 	}
 
-	err := os.MkdirAll(cfg.ApplicationID, 0775)
-	if err != nil {
-		return errors.Wrapf(err, "creating directory %s", cfg.ApplicationID)
+	if err := os.MkdirAll(cfg.ApplicationID, 0775); err != nil {
+		return errors.Wrapf(err, "creating directory '%s'", cfg.ApplicationID)
 	}
 
-	log.Infof("changing current directoty to %s", cfg.ApplicationID)
-	err = os.Chdir("./" + cfg.ApplicationID)
-	if err != nil {
-		return errors.Wrapf(err, "changing current directory to %s", cfg.ApplicationID)
+	if err := os.Chdir(cfg.ApplicationID); err != nil {
+		return errors.Wrapf(err, "changing current directory to '%s'", cfg.ApplicationID)
 	}
 
-	err = git.Initialize()
-	if err != nil {
-		return errors.Wrapf(err, "initializing git project")
+	if err := git.Init(); err != nil {
+		return errors.Wrap(err, "initializing git repository")
 	}
 
-	buildrfile, err := yaml.Marshal(cfg)
-
-	b, err := os.Create("buildr.yaml")
+	config, err := yaml.Marshal(cfg)
 	if err != nil {
-		return errors.Wrapf(err, "creating buildr.yaml")
-	}
-	defer b.Close()
-
-	_, err = b.Write(buildrfile)
-	if err != nil {
-		return errors.Wrapf(err, "writing buildr.yaml")
+		return errors.Wrap(err, "marshalling new project configuration")
 	}
 
-	rootReadme, err := os.Create("readme.md")
-	if err != nil {
-		return errors.Wrapf(err, "creating readme.md")
+	if err := ioutil.WriteFile("buildr.yaml", config, 0666); err != nil {
+		return errors.Wrap(err, "writing new project configuration to buildr.yaml")
 	}
-	defer rootReadme.Close()
-	content := fmt.Sprintf(filesContent.README_ROOT, cfg.ApplicationID)
-	_, err = rootReadme.Write([]byte(content))
-	if err != nil {
-		return errors.Wrapf(err, "writing %s", "readme.md")
+
+	if err := templates.RenderProjectReadme(cfg, templates.README); err != nil {
+		return errors.Wrapf(err, "writing new project readme to %s", templates.README)
 	}
 
 	remote := fmt.Sprintf("git@gitlab.cloudint.afip.gob.ar:%s/%s.git", cfg.SystemID, cfg.ApplicationID)
-
-	err = git.AddRemote(remote)
-	if err != nil {
+	if err := git.AddRemote("origin", remote); err != nil {
 		return errors.Wrapf(err, "adding git remote (%s)", remote)
 	}
 
-	fs, err := git.AddAll()
-	if err != nil {
-		return errors.Wrapf(err, "adding files (%s)", fs)
+	if err = git.CommitAddingAll("Crea estructura inicial (std-buildr)"); err != nil {
+		return errors.Wrap(err, "creating initial commit in git")
 	}
 
 	return f(cfg)
+
 }
 
 func New(cfg *config.Config) (Initializer, error) {
@@ -105,6 +88,6 @@ func New(cfg *config.Config) (Initializer, error) {
 	case config.TypeOracleSQLEvolutional:
 		return InitializerFunc(sqlevo.Initialize), nil
 	default:
-		return nil, errors.Errorf("Initializer not available for project type %q", cfg.Type)
+		return nil, errors.Errorf("Initializer not available for project type '%s'", cfg.Type)
 	}
 }

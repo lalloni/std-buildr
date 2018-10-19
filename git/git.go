@@ -1,8 +1,8 @@
 package git
 
 import (
-	"fmt"
-	"regexp"
+	"bufio"
+	"bytes"
 
 	"github.com/pkg/errors"
 
@@ -49,58 +49,70 @@ func DescribeVersionInCWD() (string, error) {
 	return s, nil
 }
 
-func Initialize() error {
+func Init() error {
 	return sh.Run("git", "init")
 }
 
-func AddRemote(remote string) error {
-	return sh.Run("git", "remote", "add", "origin", remote)
+func AddRemote(name, remote string) error {
+	return sh.Run("git", "remote", "add", name, remote)
 }
 
 func Add(s string) error {
 	return sh.Run("git", "add", s)
 }
 
-func AddAll() ([]string, error) {
+func AddAll() error {
 	fs, err := ListUntrackedFilesAndChangedFiles()
-
 	if err != nil {
-		return fs, errors.Wrapf(err, "listing untracked and changed files")
+		return errors.Wrapf(err, "listing untracked and changed files")
 	}
-
-	for _, element := range fs {
-		err = Add(element)
-		if err != nil {
-			return fs, err
+	for _, f := range fs {
+		if err = Add(f); err != nil {
+			return errors.Wrapf(err, "adding file '%s' to git index", f)
 		}
 	}
-
-	return fs, nil
+	return nil
 }
 
 func Commit(m string) error {
-	msg := fmt.Sprintf("'%s'", m)
-	return sh.Run("git", "commit", "-m", msg)
+	return sh.Run("git", "commit", "-m", m)
+}
+
+func CommitAddingAll(m string) error {
+
+	if err := AddAll(); err != nil {
+		return errors.Wrap(err, "adding files to git index")
+	}
+
+	if err := Commit(m); err != nil {
+		return errors.Wrap(err, "creating git commit")
+	}
+
+	return nil
 }
 
 func ListUntrackedFilesAndChangedFiles() ([]string, error) {
-	re := regexp.MustCompile(`\r?\n`)
-
-	s := []string{}
-
-	changed, err := sh.Output("git", "diff-files", "--name-only")
+	out, err := sh.Output("git", "diff-files", "--name-only")
 	if err != nil {
-		return s, errors.Wrapf(err, "listing changed files from git: %s", changed)
+		return nil, errors.Wrapf(err, "listing changed files from git: %s", out)
 	}
-
-	s = append(s, re.Split(changed, -1)...)
-
-	untrackedFiles, err := sh.Output("git", "ls-files", "--exclude-standard", "--others")
+	s := split(out)
+	out, err = sh.Output("git", "ls-files", "--exclude-standard", "--others")
 	if err != nil {
-		return s, errors.Wrapf(err, "listing untracked files from git: %s", untrackedFiles)
+		return nil, errors.Wrapf(err, "listing untracked files from git: %s", out)
 	}
-
-	s = append(s, re.Split(untrackedFiles, -1)...)
-
+	s = append(s, split(out)...)
 	return s, nil
+}
+
+func split(lines string) []string {
+	s := bufio.NewScanner(bytes.NewBufferString(lines))
+	r := []string{}
+	for s.Scan() {
+		l := s.Text()
+		if len(l) > 0 {
+			r = append(r, l)
+		}
+	}
+	return r
 }
