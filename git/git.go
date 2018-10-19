@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -49,38 +48,46 @@ func DescribeVersionInCWD() (string, error) {
 	return s, nil
 }
 
-func Initialize() error {
+func Init() error {
 	return sh.Run("git", "init")
 }
 
-func AddRemote(remote string) error {
-	return sh.Run("git", "remote", "add", "origin", remote)
+func AddRemote(name, remote string) error {
+	return sh.Run("git", "remote", "add", name, remote)
 }
 
 func Add(s string) error {
 	return sh.Run("git", "add", s)
 }
 
-func AddAll() ([]string, error) {
+func AddAll() error {
 	fs, err := ListUntrackedFilesAndChangedFiles()
-
 	if err != nil {
-		return fs, errors.Wrapf(err, "listing untracked and changed files")
+		return errors.Wrapf(err, "listing untracked and changed files")
 	}
-
-	for _, element := range fs {
-		err = Add(element)
-		if err != nil {
-			return fs, err
+	for _, f := range fs {
+		if err = Add(f); err != nil {
+			return errors.Wrapf(err, "adding file '%s' to git index", f)
 		}
 	}
-
-	return fs, nil
+	return nil
 }
 
 func Commit(m string) error {
-	msg := fmt.Sprintf("'%s'", m)
-	return sh.Run("git", "commit", "-m", msg)
+	return sh.Run("git", "commit", "-m", m)
+}
+
+func CommitAddingAll(m string) error {
+
+	if err := AddAll(); err != nil {
+		return errors.Wrap(err, "adding files to git index")
+	}
+
+	if err := Commit(m); err != nil {
+		return errors.Wrap(err, "creating git commit")
+	}
+
+	return nil
 }
 
 func ListUntrackedFilesAndChangedFiles() ([]string, error) {
