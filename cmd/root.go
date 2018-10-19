@@ -25,10 +25,9 @@ import (
 	"os"
 
 	"github.com/apex/log"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -59,6 +58,8 @@ func must(err error) {
 
 func init() {
 
+	cobra.OnInitialize(initConfig)
+
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.buildr.yaml)")
 
 	rootCmd.PersistentFlags().StringP("change-directory", "C", "", "Change to specified directory before executing any actions")
@@ -66,19 +67,8 @@ func init() {
 
 }
 
-func preRunRoot(cmd *cobra.Command, args []string) error {
-	cdto := viper.GetString("buildr.change-directory")
-	if cdto != "" {
-		log.Infof("changing current directoty to %s", cdto)
-		err := os.Chdir(cdto)
-		if err != nil {
-			return errors.Wrapf(err, "changing current directory to %s", cdto)
-		}
-	}
-	return nil
-}
-
-func initConfig() error {
+// initConfig reads in config file and ENV variables if set.
+func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
@@ -86,23 +76,13 @@ func initConfig() error {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			return errors.Wrap(err, "getting home dir")
+			fmt.Println(err)
+			os.Exit(1)
 		}
 
 		// Search config in home directory with name ".buildr" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".buildr")
-
-		f, err := os.Open("buildr.yaml")
-		if err != nil {
-			return errors.Wrap(err, "opening buildr.yaml")
-		}
-		defer f.Close()
-		c, err := config.Read(f)
-		if err != nil {
-			return errors.Wrapf(err, "reading project configuration")
-		}
-		viper.Set("buildr.config", c)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
@@ -110,6 +90,17 @@ func initConfig() error {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+}
+
+func preRunRoot(cmd *cobra.Command, args []string) error {
+	cdto := viper.GetString("buildr.change-directory")
+	if cdto != "" {
+		log.Infof("changing current directory to %s", cdto)
+		err := os.Chdir(cdto)
+		if err != nil {
+			return errors.Wrapf(err, "changing current directory to %s", cdto)
+		}
 	}
 	return nil
 }

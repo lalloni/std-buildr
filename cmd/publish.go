@@ -12,17 +12,19 @@ import (
 
 // packageCmd represents the package command
 var publishCmd = &cobra.Command{
-	Use:   "publish",
-	Short: "Publish the project",
-	RunE:  chain(runClean, runPackage, runPublish),
+	Use:     "publish",
+	Short:   "Publish the project",
+	PreRunE: loadProjectConfig,
+	RunE:    chain(runClean, runPackage, runPublish),
 }
 
 func init() {
-	initConfig()
+
 	publishCmd.PersistentFlags().StringP("trust", "t", "", "File path with trusted certificate chain (in PEM format)")
 	must(viper.BindPFlag("buildr.trust", publishCmd.PersistentFlags().Lookup("trust")))
 
 	rootCmd.AddCommand(publishCmd)
+
 }
 
 func runPublish(ctx *context.Context) error {

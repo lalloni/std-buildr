@@ -34,14 +34,13 @@ import (
 
 // packageCmd represents the package command
 var packageCmd = &cobra.Command{
-	Use:   "package",
-	Short: "Package the current version of the project",
-	RunE:  chain(runClean, runPackage),
+	Use:     "package",
+	Short:   "Package the current version of the project",
+	PreRunE: loadProjectConfig,
+	RunE:    chain(runClean, runPackage),
 }
 
 func init() {
-
-	initConfig()
 
 	packageCmd.PersistentFlags().BoolP("allow-dirty", "d", false, "Allow build packages that contain modified files in the working directory")
 	must(viper.BindPFlag("buildr.allow-dirty", packageCmd.PersistentFlags().Lookup("allow-dirty")))

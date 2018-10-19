@@ -8,7 +8,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 )
 
@@ -33,5 +35,14 @@ func chain0(fs ...func(*context.Context) error) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func loadProjectConfig(*cobra.Command, []string) error {
+	config, err := config.ReadFile("buildr.yaml")
+	if err != nil {
+		return err
+	}
+	viper.Set("buildr.config", config)
 	return nil
 }

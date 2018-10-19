@@ -12,7 +12,7 @@ import (
 
 var createProject = &cobra.Command{
 	Use:   "create-project",
-	Short: "Create standar project with the appropriate structure according to the type of project indicated",
+	Short: "Create a new standard-compliant project structure",
 	RunE:  chain(runCreateProject),
 }
 

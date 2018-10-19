@@ -2,6 +2,7 @@ package config
 
 import (
 	"io"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -54,4 +55,18 @@ func Read(r io.Reader) (*Config, error) {
 		return c, errors.Wrapf(err, "decondig project config")
 	}
 	return c, c.Validate()
+}
+
+// ReadFile carga una configuración de proyecto desde un archivo
+func ReadFile(location string) (*Config, error) {
+	f, err := os.Open(location)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening '%s'", location)
+	}
+	defer f.Close()
+	c, err := Read(f)
+	if err != nil {
+		return nil, errors.Wrapf(err, "reading project configuration")
+	}
+	return c, nil
 }
