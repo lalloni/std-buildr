@@ -1,63 +1,99 @@
 package sqleve
 
 import (
-	"os"
-	"path/filepath"
+	"fmt"
+
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/helpers"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 )
 
 const (
-	eveFolder = "src/sql"
+	eveFolder  = "src/sql"
+	baseBranch = "base"
 )
+
+type Script struct {
+	Name string
+	Type string
+}
 
 func Initialize(cfg *config.Config) error {
 
-	cfg.TrackerID = viper.GetString("buildr.tracker-id")
+	if err := helpers.ValidateProjectConfig(cfg); err != nil {
+		return errors.Wrap(err, "checking project configuration requirements")
+	}
 
-	if cfg.TrackerID == "" {
+	tid := viper.GetString("buildr.tracker-id")
+	if tid == "" {
 		return errors.Errorf("--tracker-id is required")
 	}
+	cfg.TrackerID = tid
 
-	err := os.MkdirAll(eveFolder, 0775)
+	if err := helpers.CreateProject(cfg); err != nil {
+		return errors.Wrap(err, "creating project structure")
+	}
+
+	if err := createBaseBranch(cfg); err != nil {
+		return errors.Wrap(err, "creating eventual base branch")
+	}
+
+	return nil
+}
+
+func CreateEventual(cfg *config.Config) error {
+
+	// validar que no haya cambios en la WC
+	untracked, err := git.UntrackedFilesInCWD()
 	if err != nil {
-		return errors.Wrapf(err, "creating directory")
+		return errors.Wrapf(err, "checking for untracked files")
+	}
+	if untracked || git.ChangedFilesInCWD() || git.UncommittedFilesInCWD() {
+		return errors.Errorf("you have changes uncommited, please commit them or undo")
 	}
 
-	p := filepath.Join(eveFolder, templates.README)
-	if err := templates.RenderEventualReadme(cfg, p); err != nil {
-		return errors.Wrapf(err, "creating %s", p)
-	}
-
-	git.CreateBranch("base")
+	// validar que exista branch base
+	exist, err := git.ExistBranch(baseBranch)
 	if err != nil {
-		return errors.Wrapf(err, "creating branch %s", "base")
+		return errors.Wrap(err, "checking for base branch existence")
+	}
+	if !exist {
+		exist, err := git.ExistBranch(baseBranch)
+		if err != nil {
+			return errors.Wrap(err, "checking for remote base branch existence")
+		}
+		if exist {
+			git.CreateBranchFrom("base", "origin/base")
+		} else {
+			if err := createBaseBranch(cfg); err != nil {
+				return errors.Wrap(err, "creating eventual base branch")
+			}
+		}
 	}
 
-	buildrfile, err := yaml.Marshal(cfg)
-
-	b, err := os.Create("buildr.yaml")
-	if err != nil {
-		return errors.Wrapf(err, "opening buildr.yaml")
-	}
-	defer b.Close()
-
-	_, err = b.Write(buildrfile)
-	if err != nil {
-		return errors.Wrapf(err, "writing buildr.yaml")
+	// crear branch para el eventual
+	newBranch := fmt.Sprintf("%s-%s", cfg.TrackerID, cfg.IssueID)
+	if err := git.CreateBranchFrom(newBranch, baseBranch); err != nil {
+		return errors.Wrapf(err, "creating branch %s from %s", newBranch, baseBranch)
 	}
 
-	if err := git.CommitAddingAll("Crea estructura de proyecto eventual (std-buildr)"); err != nil {
-		return errors.Wrap(err, "creating sql eventual commit in git")
+	// crear config de proyecto
+	if err := helpers.CreateProjectConfig(cfg); err != nil {
+		return errors.Wrap(err, "creating project configuration")
 	}
 
-	git.Push("origin", "base")
+	// crear scripts solicitados
+	ss := viper.Get("buildr.scripts").([]Script)
+	for i, script := range ss {
+		err := helpers.CreateEmptyFilef("%s/%03d-%s-%s.sql", eveFolder, i+1, script.Type, script.Name)
+		if err != nil {
+			return errors.Wrapf(err, "creating file")
+		}
+	}
 
 	return nil
 }

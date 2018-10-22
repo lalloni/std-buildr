@@ -8,6 +8,7 @@ import (
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/helpers"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 )
 
@@ -17,6 +18,14 @@ var (
 )
 
 func Initialize(cfg *config.Config) error {
+
+	if err := helpers.ValidateProjectConfig(cfg); err != nil {
+		return errors.Wrap(err, "checking project configuration requirements")
+	}
+
+	if err := helpers.CreateProject(cfg); err != nil {
+		return errors.Wrap(err, "creating project structure")
+	}
 
 	if err := os.MkdirAll(incFolder, 0775); err != nil {
 		return errors.Wrap(err, "creating incremental sources directory")
@@ -36,7 +45,7 @@ func Initialize(cfg *config.Config) error {
 		return errors.Wrapf(err, "creating %s", p)
 	}
 
-	if err := git.CommitAddingAll("Crea estructura de proyecto evolutivo (std-buildr)"); err != nil {
+	if err := git.CommitAddingAll("Crea estructura inicial de SQL evolutivo (std-buildr)"); err != nil {
 		return errors.Wrap(err, "creating sql evolutional commit in git")
 	}
 
