@@ -13,6 +13,7 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/sqldef"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/sqleve"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/sqlevo"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 )
@@ -90,6 +91,8 @@ func New(cfg *config.Config) (Initializer, error) {
 		return InitializerFunc(sqlevo.Initialize), nil
 	case config.TypeOracleSQLDeferred:
 		return InitializerFunc(sqldef.Initialize), nil
+	case config.TypeOracleSQLEventual:
+		return InitializerFunc(sqleve.Initialize), nil
 	default:
 		return nil, errors.Errorf("Initializer not available for project type '%s'", cfg.Type)
 	}

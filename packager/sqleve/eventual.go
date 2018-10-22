@@ -16,6 +16,7 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/git"
+	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/templates"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/msg"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/sh"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/version"
@@ -23,9 +24,7 @@ import (
 
 const targetSource = "target/source"
 
-var (
-	eventualRegexp = regexp.MustCompile(`^(?:(.*)([-_]))?(\d{3,})([-_])(dml|dcl|ddl)(?:([-_])(.+))?\.sql$`)
-)
+var eventualRegexp = regexp.MustCompile(`^(?:(.*)([-_]))?(\d{3,})([-_])(dml|dcl|ddl)(?:([-_])(.+))?\.sql$`)
 
 func Package(cfg *config.Config, ctx *context.Context) error {
 
@@ -84,6 +83,9 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 	for _, source := range sources {
 
+		if path.Base(source) == templates.README {
+			continue
+		}
 		if !eventualRegexp.MatchString(path.Base(source)) {
 			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, eventualRegexp.String())
 		}
