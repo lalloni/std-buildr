@@ -34,9 +34,10 @@ import (
 
 // packageCmd represents the package command
 var packageCmd = &cobra.Command{
-	Use:   "package",
-	Short: "Package the current version of the project",
-	RunE:  chain(runClean, runPackage),
+	Use:     "package",
+	Short:   "Package the current version of the project",
+	PreRunE: loadProjectConfig,
+	RunE:    chain(runClean, runPackage),
 }
 
 func init() {

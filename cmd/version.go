@@ -29,9 +29,8 @@ import (
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
-	Use:               "version",
-	Short:             "Print version and exit",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error { return nil },
+	Use:   "version",
+	Short: "Print version and exit",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(viper.GetString("version"))
 	},

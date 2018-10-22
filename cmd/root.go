@@ -30,8 +30,6 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 )
 
 var cfgFile string
@@ -98,21 +96,11 @@ func initConfig() {
 func preRunRoot(cmd *cobra.Command, args []string) error {
 	cdto := viper.GetString("buildr.change-directory")
 	if cdto != "" {
-		log.Infof("changing current directoty to %s", cdto)
+		log.Infof("changing current directory to %s", cdto)
 		err := os.Chdir(cdto)
 		if err != nil {
 			return errors.Wrapf(err, "changing current directory to %s", cdto)
 		}
 	}
-	f, err := os.Open("buildr.yaml")
-	if err != nil {
-		return errors.Wrap(err, "opening buildr.yaml")
-	}
-	defer f.Close()
-	c, err := config.Read(f)
-	if err != nil {
-		return errors.Wrapf(err, "reading project configuration")
-	}
-	viper.Set("buildr.config", c)
 	return nil
 }
