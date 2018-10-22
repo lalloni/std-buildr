@@ -38,7 +38,7 @@ func chain0(fs ...func(*context.Context) error) error {
 	return nil
 }
 
-func loadProjectConfig(*cobra.Command, []string) error {
+func loadProjectConfig(ctx *context.Context) error {
 	config, err := config.ReadFile("buildr.yaml")
 	if err != nil {
 		return err

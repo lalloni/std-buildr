@@ -14,7 +14,7 @@ import (
 var publishCmd = &cobra.Command{
 	Use:     "publish",
 	Short:   "Publish the project",
-	PreRunE: loadProjectConfig,
+	PreRunE: chain(loadProjectConfig),
 	RunE:    chain(runClean, runPackage, runPublish),
 }
 

@@ -51,11 +51,8 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Type == TypeOracleSQLEventual {
-		if c.IssueID == "" {
-			return errors.Errorf(`issue-id is required in configuration`)
-		}
 		if c.TrackerID == "" {
-			return errors.Errorf(`tracker-id is required in configuration`)
+			return errors.Errorf(`tracker-id is required in oracle sql eventual configuration`)
 		}
 	} else {
 		if c.IssueID != "" {

@@ -28,6 +28,10 @@ var eventualRegexp = regexp.MustCompile(`^(?:(.*)([-_]))?(\d{3,})([-_])(dml|dcl|
 
 func Package(cfg *config.Config, ctx *context.Context) error {
 
+	if cfg.IssueID == "" {
+		return errors.Errorf(`issue-id is required in configuration`)
+	}
+
 	ev, err := version.ParseEventualVersion(ctx.Build.Version)
 	if err != nil {
 		return errors.Wrap(err, "checking eventual version")
