@@ -41,9 +41,37 @@ type Nexus struct {
 }
 
 func (c *Config) Validate() error {
+
+	if c.Type == "" {
+		return errors.Errorf(`type is required in configuration`)
+	}
+
 	if !strings.HasPrefix(c.ApplicationID, c.SystemID+"-") {
 		return errors.Errorf(`system-id ("%s-") must be a prefix of application-id (found "%s")`, c.SystemID, c.ApplicationID)
 	}
+
+	if c.Type == TypeOracleSQLEventual {
+		if c.IssueID == "" {
+			return errors.Errorf(`issue-id is required in configuration`)
+		}
+		if c.TrackerID == "" {
+			return errors.Errorf(`tracker-id is required in configuration`)
+		}
+	} else {
+		if c.IssueID != "" {
+			return errors.Errorf(`issue-id must not be defined in configuration`)
+		}
+		if c.TrackerID != "" {
+			return errors.Errorf(`tracker-id must not be defined in configuration`)
+		}
+	}
+
+	if c.Type != TypeOracleSQLEvolutional {
+		if len(c.From) != 0 {
+			return errors.Errorf(`form must not be defined in configuration`)
+		}
+	}
+
 	return nil
 }
 
