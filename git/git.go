@@ -61,15 +61,29 @@ func Add(s string) error {
 	return sh.Run("git", "add", s)
 }
 
+func CreateOrphanBranch(name string) error {
+	return sh.Run("git", "checkout", "--orphan", name)
+}
+
 func CreateBranch(name string) error {
 	return sh.Run("git", "checkout", "-b", name)
 }
+
 func CreateBranchFrom(name string, from string) error {
 	return sh.Run("git", "checkout", "-b", name, from)
 }
 
-func CheckExistingBranch(name string) bool {
-	return sh.Run("git", "rev-parse", "--verify", name) == nil
+func ExistBranch(name string) (bool, error) {
+	branches, err := sh.Output("git", "branch", "-a")
+	if err != nil {
+		return false, err
+	}
+	for _, branch := range split(branches) {
+		if branch[2:] == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func AddAll() error {

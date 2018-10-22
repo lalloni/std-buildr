@@ -60,6 +60,8 @@ func scripts(ss []string, t string) []sqleve.Script {
 
 func parseScripts(ctx *context.Context) error {
 
+	loadProjectConfig(nil, nil)
+
 	ss := append(scripts(*dmls, "dml"), append(scripts(*dcls, "dcl"), scripts(*ddls, "ddl")...)...)
 
 	sort.Slice(ss, func(a, b int) bool {
