@@ -2,9 +2,9 @@
 
 ## Recetas
 
-* Crear, desarrollar, versionar, empaquetar y publicar SQL evolutivo
-* Crear, desarrollar, versionar, empaquetar y publicar SQL diferido
-* Crear, desarrollar, versionar, empaquetar y publicar SQL eventual
+* [Crear, desarrollar, versionar, empaquetar y publicar SQL evolutivo](tutorial-evolutional.md)
+* [Crear, desarrollar, versionar, empaquetar y publicar SQL diferido](tutorial-deferred.md)
+* [Crear, desarrollar, versionar, empaquetar y publicar SQL eventual](tutorial-eventual.md)
 
 ## Configuración
 
