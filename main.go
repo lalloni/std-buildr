@@ -26,7 +26,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
-	"github.com/apex/log/handlers/text"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/viper"
 
@@ -46,10 +45,7 @@ func main() {
 		viper.Set("version", fmt.Sprintf("%s-%s (%s)", version, commit, date))
 	}
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		switch os.Getenv("GOOS") {
-		case "windows":
-			log.SetHandler(text.New(os.Stdout))
-		default:
+		if os.Getenv("GOOS") != "windows" {
 			log.SetHandler(cli.New(os.Stdout))
 		}
 	}
