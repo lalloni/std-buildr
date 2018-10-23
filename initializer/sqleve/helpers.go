@@ -25,7 +25,11 @@ func createEventualReadme(cfg *config.Config) error {
 }
 
 func createBaseBranch(cfg *config.Config) error {
-	if err := git.CreateOrphanBranch(baseBranch); err != nil {
+	return createBranch(cfg, baseBranch)
+}
+
+func createBranch(cfg *config.Config, branch string) error {
+	if err := git.CreateOrphanBranch(branch); err != nil {
 		return errors.Wrap(err, "creating base branch")
 	}
 	cfg2 := *cfg
@@ -39,11 +43,9 @@ func createBaseBranch(cfg *config.Config) error {
 	if err := createEventualReadme(cfg); err != nil {
 		return errors.Wrap(err, "creating eventuals readme file")
 	}
+
 	if err := git.CommitAddingAll("Crea estructura inicial para SQL eventual (std-buildr)"); err != nil {
 		return errors.Wrap(err, "creating sql eventual commit in git")
-	}
-	if err := git.Push("origin", "base"); err != nil {
-		return errors.Wrap(err, "pushing base branch to origin")
 	}
 	return nil
 }

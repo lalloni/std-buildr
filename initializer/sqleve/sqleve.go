@@ -56,11 +56,13 @@ func CreateEventual(cfg *config.Config) error {
 		return errors.Errorf("you have changes uncommited, please commit them or undo")
 	}
 
+	newBranch := fmt.Sprintf("%s-%s", cfg.TrackerID, cfg.IssueID)
 	// validar que exista branch base
 	exist, err := git.ExistBranch(baseBranch)
 	if err != nil {
 		return errors.Wrap(err, "checking for base branch existence")
 	}
+
 	if !exist {
 		exist, err := git.ExistBranch(baseBranch)
 		if err != nil {
@@ -68,17 +70,21 @@ func CreateEventual(cfg *config.Config) error {
 		}
 		if exist {
 			git.CreateBranchFrom("base", "origin/base")
+			// crear branch para el eventual desde base
+			if err := git.CreateBranchFrom(newBranch, baseBranch); err != nil {
+				return errors.Wrapf(err, "creating branch %s from %s", newBranch, baseBranch)
+			}
 		} else {
-			if err := createBaseBranch(cfg); err != nil {
-				return errors.Wrap(err, "creating eventual base branch")
+			// crear branch para el eventual desde raiz
+			if err := createBranch(cfg, newBranch); err != nil {
+				return errors.Wrapf(err, "creating branch %s from root", newBranch)
 			}
 		}
-	}
-
-	// crear branch para el eventual
-	newBranch := fmt.Sprintf("%s-%s", cfg.TrackerID, cfg.IssueID)
-	if err := git.CreateBranchFrom(newBranch, baseBranch); err != nil {
-		return errors.Wrapf(err, "creating branch %s from %s", newBranch, baseBranch)
+	} else {
+		// crear branch para el eventual desde base
+		if err := git.CreateBranchFrom(newBranch, baseBranch); err != nil {
+			return errors.Wrapf(err, "creating branch %s from %s", newBranch, baseBranch)
+		}
 	}
 
 	// crear config de proyecto
