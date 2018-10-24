@@ -23,6 +23,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
@@ -45,7 +46,7 @@ func main() {
 		viper.Set("version", fmt.Sprintf("%s-%s (%s)", version, commit, date))
 	}
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		if os.Getenv("GOOS") != "windows" {
+		if runtime.GOOS != "windows" {
 			log.SetHandler(cli.New(os.Stdout))
 		}
 	}
