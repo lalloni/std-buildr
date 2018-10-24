@@ -96,8 +96,8 @@ Teniendo en `buildr.yaml`:
 ```yaml
 system-id: "ve"
 application-id: "ve-sql-eventual"
-type: "oracle-sql-evolutional"
+type: "oracle-sql-eventual"
 tracker-id: "redmine-dieccs"
 ```
 
-Además se inicializará un repositorio git local en el directorio creado y se creará en el mismo el branch `base` con un commit inicial que contiene todos los archivos creados.
+Además se inicializará un repositorio git local en el directorio creado y se creará en el mismo el branch `master` con un commit inicial que contiene todos los archivos creados.

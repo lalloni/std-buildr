@@ -21,7 +21,9 @@ Crear nuevo SQL eventual originado por el issue 1234 e inicializa 3 archivos par
 buildr create-eventual --issue-id 1234 --ddl tabla-temporal --dcl grants-tabla-temporal --dml consulta-x
 ```
 
-Crea un branch llamado "redmine-dieccs-1234" basado en el branch "base" (si éste no existe, lo crea conteniendo un commit con el archivo de configuración) y hace un checkout de dicho branch.
+Crea un branch llamado "redmine-dieccs-1234" que contiene un commit con la estructura básica del nuevo eventual y hace un checkout de dicho branch.
+
+Si en el repositorio local se encontrara un branch local llamado `base` se utilizará como padre del nuevo branch. Si no se encontrara dicho branch pero se encontrara un branch remoto llamado `origin/base` se creará el branch local `base` apuntando al mismo commit que el remoto y se utilizará como padre del nuevo branch. Este branch `base` puede ser utilizado para contener archivos que se desean reutilizar en todos los eventuales generados a partir de su existencia.
 
 Crea archivos `.sql` para cada script especificado con `--dml`, `--ddl` y `--dcl` en el orden especificado en el comando. Para el ejemplo anterior, sería:
 
