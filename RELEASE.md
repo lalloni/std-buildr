@@ -1,10 +1,12 @@
-# Release notes
+# Release Notes de `std-buildr`
 
-* **Aplicación:** std-buildr
-* **Versión:** 1.0.0
-* **Fecha de Version:** 23/10/2018
-* **Objetivo:** Probeer una herramienta de gestion de proyectos.
-* **[Documentación](./doc/index.md)**
-* **[Peticiones Resueltas](https://redmine-dieccs.cloudint.afip.gob.ar/versions/84)**
-* **[Etiqueta Codigo Fuente](https://gitlab.cloudint.afip.gob.ar/std/std-buildr/tags/v1.0.0)**
-* **[Artefactos](https://nexus.cloudint.afip.gob.ar/nexus/service/rest/repository/browse/std-raw/std/std-buildr/1.0.0/)**
+## Versión 1.0.0
+
+Primera release de la herramienta de gestión de proyectos estándar.
+
+* **Versión:** [1.0.0](https://redmine-dieccs.cloudint.afip.gob.ar/versions/84)
+* **Fecha de publicación:** 24/10/2018
+* **Documentación:** Ver [índice](./doc/index.md).
+* **Peticiones Resueltas:** Ver [informe](https://redmine-dieccs.cloudint.afip.gob.ar/projects/std-buildr/issues?fixed_version_id=84).
+* **Etiqueta Código Fuente:** [1.0.0](https://gitlab.cloudint.afip.gob.ar/std/std-buildr/tags/v1.0.0).
+* **Artefactos:** En [repositorio](https://nexus.cloudint.afip.gob.ar/nexus/service/rest/repository/browse/std-raw/std/std-buildr/1.0.0/).
