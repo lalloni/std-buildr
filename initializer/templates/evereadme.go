@@ -2,12 +2,20 @@ package templates
 
 import (
 	"io/ioutil"
+	"os"
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/config"
 )
 
 func RenderEventualReadme(cfg *config.Config, location string) error {
-	return ioutil.WriteFile(location, []byte(eveReadme), 0666)
+	f, err := os.Open(location)
+	if os.IsNotExist(err) {
+		return ioutil.WriteFile(location, []byte(eveReadme), 0666)
+	}
+	if err == nil {
+		f.Close()
+	}
+	return nil
 }
 
 const eveReadme = `# Eventuales

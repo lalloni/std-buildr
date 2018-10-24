@@ -24,17 +24,27 @@ func createEventualReadme(cfg *config.Config) error {
 	return nil
 }
 
-func createBaseBranch(cfg *config.Config) error {
-	return createBranch(cfg, baseBranch)
+func createEventualStructureOnBaseBranch(cfg *config.Config) error {
+	cfg2 := *cfg
+	cfg2.IssueID = ""
+	return createEventualStructureOnBranch(&cfg2, localBaseBranch)
 }
 
-func createBranch(cfg *config.Config, branch string) error {
+func createEventualStructureOnBranch(cfg *config.Config, branch string) error {
 	if err := git.CreateOrphanBranch(branch); err != nil {
 		return errors.Wrap(err, "creating base branch")
 	}
-	cfg2 := *cfg
-	cfg2.IssueID = ""
-	if err := helpers.CreateProjectConfig(&cfg2); err != nil {
+	if err := createEventualStructure(cfg); err != nil {
+		return nil
+	}
+	if err := git.CommitAddingAll("Crea estructura inicial para SQL eventual (std-buildr)"); err != nil {
+		return errors.Wrap(err, "creating sql eventual commit in git")
+	}
+	return nil
+}
+
+func createEventualStructure(cfg *config.Config) error {
+	if err := helpers.CreateProjectConfig(cfg); err != nil {
 		return errors.Wrap(err, "creating project configuration")
 	}
 	if err := templates.RenderProjectReadme(cfg, templates.README); err != nil {
@@ -42,10 +52,6 @@ func createBranch(cfg *config.Config, branch string) error {
 	}
 	if err := createEventualReadme(cfg); err != nil {
 		return errors.Wrap(err, "creating eventuals readme file")
-	}
-
-	if err := git.CommitAddingAll("Crea estructura inicial para SQL eventual (std-buildr)"); err != nil {
-		return errors.Wrap(err, "creating sql eventual commit in git")
 	}
 	return nil
 }
