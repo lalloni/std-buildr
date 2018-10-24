@@ -1,6 +1,6 @@
 # Paso a paso: SQL Diferido
 
-Este documento esta destinado a guiar al desarrollador en el creación, desarrollo y empaquetado y publicación de un proyectos SQL Diferidos según los estándares.
+Este documento esta destinado a guiar al desarrollador en la creación, desarrollo y empaquetado y publicación de un proyectos SQL Diferidos según los estándares.
 
 ## Crear proyecto
 
@@ -31,21 +31,22 @@ application-id: factura-blockchain-sql-process
 type: oracle-sql-deferred
 ```
 
-**Por ultimo se debe ejecutar el siguiente comando para grabar la nueva estructura en el repositorio remoto de gitlab:**
+**El directorio creado, `factura-blockchain-sql-process` es un proyecto git con un `commit` inicial que incluye a todos los archivos generados.  Se deberá agregar un repositorio `remote` y por último grabar la nueva estructura en el repositorio remoto de gitlab:**
 
 ```bash
-git push
+git remote add origin git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-process.git
+git push origin master
 ```
 
 ## Desarrollar
 
-En caso de no ser el creador del proyecto [Crear proyecto](#Crear-proyecto) se debe clonar el proyecto de gitlab con el siguiente comando:
+En caso de no ser el creador del proyecto será necesario primero [crear un proyecto](#Crear-proyecto), caso contrario habrá que clonarlo desde gitlab con el siguiente comando:
 
 ```bash
 git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-process.git
 ```
 
-Se crea un nuevo script en `src/sql`:
+Crear un nuevo script en `src/sql`:
 
 ```tree
 factura-blockchain-sql-process
@@ -66,13 +67,7 @@ git commit
 
 ## Publicar
 
-Se desea publicar la versión 1.0.0 de este proyecto. Para ello es necesario crear un tag de la siguiente manera:
-
-```bash
-git tag v1.0.0 -sa -m "Version 1.0.0"
-```
-
-Se modifica el `buildr.yaml` para configurar de empaquetamiento y repositorio de nexus:
+Se desea publicar la versión 1.0.0 de este proyecto. Para ello es necesario modificar el `buildr.yaml` para configurar de empaquetamiento y repositorio de nexus:
 
 ```yaml
 system-id: factura-blockchain
@@ -82,6 +77,19 @@ package:
     format: "zip"
 nexus:
     url: "https://nexus.cloudint.afip.gob.ar/nexus/repository/"
+```
+
+Realizar un commit para asegurarse de que todos los cambios fueron impactados:
+
+```bash
+git add buildr.yaml
+git commit -m "COMENTARIO DEL COMMIT"
+```
+
+Y luego crear un tag de la siguiente manera:
+
+```bash
+git tag v1.0.0 -a -m "Version 1.0.0"
 ```
 
 Para finalizar se ejecuta el comando publish del gestor de proyectos std-buildr, el cual empaquetara y publicara el proyecto:
