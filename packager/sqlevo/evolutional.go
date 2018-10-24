@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -86,20 +85,20 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 	for _, source := range sources {
 
-		if path.Base(source) == templates.README {
+		if filepath.Base(source) == templates.README {
 			continue
 		}
 
-		if !evolutionalRegexp.MatchString(path.Base(source)) {
+		if !evolutionalRegexp.MatchString(filepath.Base(source)) {
 			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, evolutionalRegexp.String())
 		}
 
-		ss := evolutionalRegexp.FindStringSubmatch(path.Base(source))
+		ss := evolutionalRegexp.FindStringSubmatch(filepath.Base(source))
 		if len(ss[1]) != 0 && (ss[1] != cfg.ApplicationID+"-" || ss[1] != cfg.ApplicationID+"_") {
 			return errors.Errorf("source file '%s' name prefix '%s' must equal application id '%s' if used", source, ss[1][:len(ss[1])-1], cfg.ApplicationID)
 		}
 
-		targetName := path.Base(source)
+		targetName := filepath.Base(source)
 		if len(ss[1]) == 0 {
 			targetName = cfg.ApplicationID + "-" + targetName
 		}
