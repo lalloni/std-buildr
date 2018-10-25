@@ -1,6 +1,6 @@
-# Paso a paso: SQL Eventual
+[[#]] Paso a paso: SQL Eventual
 
-Este documento esta destinado a guiar al desarrollador en la creación, desarrollo y empaquetado y publicación de un proyectos SQL Eventual según los estándares.
+Este documento esta destinado a guiar al desarrollador en la creación, desarrollo, empaquetado y publicación de un proyectos SQL Eventual según los estándares.
 
 ## Crear proyecto
 
