@@ -27,14 +27,20 @@ import (
 )
 
 const (
-	usernameEnvar = "STD_PUBLISHR_USERNAME"
-	passwordEnvar = "STD_PUBLISHR_PASSWORD"
+	usernameEnvar   = "STD_PUBLISHR_USERNAME"
+	passwordEnvar   = "STD_PUBLISHR_PASSWORD"
+	defaultNexusURL = "https://nexus.cloudint.afip.gob.ar/nexus/repository"
 )
 
 func star(_ rune) rune {
 	return '*'
 }
 func Publish(cfg *config.Config, ctx *context.Context) error {
+
+	if cfg.Nexus.URL == "" {
+		log.Infof("using default nexus url (%s)", defaultNexusURL)
+		cfg.Nexus.URL = defaultNexusURL
+	}
 
 	istty := isatty.IsTerminal(os.Stdout.Fd())
 
