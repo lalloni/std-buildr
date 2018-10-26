@@ -38,6 +38,10 @@ func CreateProject(cfg *config.Config) error {
 		return errors.Wrapf(err, "writing new project readme to %s", templates.README)
 	}
 
+	if err := templates.RenderGitIgnore(cfg, templates.GITIGNORE); err != nil {
+		return errors.Wrap(err, "writing new project .gitignore")
+	}
+
 	remote := fmt.Sprintf("git@gitlab.cloudint.afip.gob.ar:%s/%s.git", cfg.SystemID, cfg.ApplicationID)
 	if err := git.AddRemote("origin", remote); err != nil {
 		return errors.Wrapf(err, "adding git remote (%s)", remote)
