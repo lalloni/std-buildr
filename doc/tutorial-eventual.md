@@ -1,4 +1,4 @@
-[[#]] Paso a paso: SQL Eventual
+# Paso a paso: SQL Eventual
 
 Este documento esta destinado a guiar al desarrollador en la creación, desarrollo, empaquetado y publicación de un proyectos SQL Eventual según los estándares.
 
@@ -35,13 +35,12 @@ tracker-id: redmine-dieccs
 **El directorio creado, `factura-blockchain-sql-eventual` es un proyecto git con un `commit` inicial que incluye a todos los archivos generados.  Se deberá agregar un repositorio `remote` y por último grabar la nueva estructura en el repositorio remoto de gitlab:**
 
 ```bash
-git remote add origin git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-eventual.git
 git push origin master
 ```
 
 ## Crear eventual
 
-En caso de no ser el creador del proyecto será necesario [crear un nuevo proyecto](#Crear-proyecto) o bien se debe clonar un proyecto existente en gitlab con el siguiente comando:
+En caso de no ser el creador del proyecto y este exista en gitlab (si no existe es necesario [crear un proyecto](#Crear-proyecto) y continuar con la creacion del eventual) habrá que clonarlo desde gitlab con el siguiente comando:
 
 ```bash
 git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-eventual.git
@@ -57,7 +56,7 @@ Se requiere iniciar el desarrollo de un eventual originado por la petición `123
 Se ejecuta el comando `create-eventual` del `std-buildr`
 
 ```bash
-std-buildr create-eventual --dml obtener --ddl crear-tabla --dcl agregar-permisos --dml agregar-data -i 1234
+std-buildr create-eventual --dml obtener-data --ddl crear-tabla --dcl agregar-permisos --dml agregar-data -i 1234
 ```
 
 En caso de no existir el branch `base` inicializara el proyecto para obtener la estructura base y realizara un commit con ella.
@@ -102,28 +101,9 @@ git commit
 
 ## Publicar eventual
 
-Se desea publicar la versión `1`  del eventual `redmine-dieccs-1234`. Para ello es necesario modificar el `buildr.yaml` para configurar de empaquetamiento y repositorio de nexus:
+Se desea publicar la versión `1`  del eventual `redmine-dieccs-1234`.
 
-```yaml
-system-id: factura-blockchain
-application-id: factura-blockchain-sql-eventual
-type: oracle-sql-eventual
-tracker-id: redmine-dieccs
-issue-id: 1234
-package:
-    format: "zip"
-nexus:
-    url: "https://nexus.cloudint.afip.gob.ar/nexus/repository/"
-```
-
-Realizar un commit para asegurarse de que todos los cambios fueron impactados:
-
-```bash
-git add buildr.yaml
-git commit -m "COMENTARIO DEL COMMIT"
-```
-
-Y luego crear un tag de la siguiente manera:
+Crear un tag de la siguiente manera:
 
 ```bash
 git tag redmine-dieccs-1234-1 -a -m "Version 1 del eventual redmine-dieccs-1234"

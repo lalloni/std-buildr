@@ -37,13 +37,12 @@ type: oracle-sql-evolutional
 **El directorio creado, `factura-blockchain-sql` es un proyecto git con un `commit` inicial que incluye a todos los archivos generados.  Se deberá agregar un repositorio `remote` y por último grabar la nueva estructura en el repositorio remoto de gitlab:**
 
 ```bash
-git remote add origin git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql.git
 git push origin master
 ```
 
 ## Desarrollar
 
-En caso de no ser el creador del proyecto tal como se indica en [crear proyecto](#Crear-proyecto) habrá que clonar el proyecto de gitlab con el siguiente comando:
+En caso de no ser el creador del proyecto y este exista en gitlab (si no existe es necesario [crear un proyecto](#Crear-proyecto) y continuar con la creacion del script) habrá que clonarlo desde gitlab con el siguiente comando:
 
 ```bash
 git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql.git
