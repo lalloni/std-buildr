@@ -22,5 +22,5 @@ var projectReadmeTemplate = template.Must(template.New("ProjectReadme").Parse(pr
 
 const projectReadme = `# {{ .ApplicationID }}
 
-Este proyecto esta siendo gestionado por [std-buildr](https://gitlab.cloudint.afip.gob.ar/std/std-buildr/blob/master/doc/index.md).
+Este proyecto esta siendo gestionado por [std-buildr](https://gitlab.cloudint.afip.gob.ar/std/std-buildr/).
 `
