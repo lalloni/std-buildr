@@ -43,7 +43,7 @@ application-id: "ve-sql-database"
 type: "oracle-sql-evolutional"
 ```
 
-Además se inicializará un repositorio git local en el directorio creado (y se le agragara un repositorio remoto llamado `origin`) y se creará en el mismo el branch `master` con un commit inicial que contiene todos los archivos creados.
+Además se inicializará un repositorio git local en el directorio creado (y se le agregará un repositorio remoto llamado `origin`) y se creará en el mismo el branch `master` con un commit inicial que contiene todos los archivos creados.
 
 #### Crear proyecto SQL diferido
 
