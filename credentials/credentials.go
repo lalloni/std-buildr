@@ -24,12 +24,11 @@ const (
 	MustAsk
 )
 
-func GetUsernamePassword(ask Ask, usernameEnvar, passwordEnvar string) (*Credentials, error) {
+func GetUsernamePassword(ask Ask, username, password string) (*Credentials, error) {
 
 	stdin := int(syscall.Stdin)
 	istty := terminal.IsTerminal(stdin)
 
-	username := os.Getenv(usernameEnvar)
 	if ask == MustAsk || ask == CanAsk && username == "" && istty {
 		fmt.Print("Enter username: ")
 		bytes, err := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -39,7 +38,6 @@ func GetUsernamePassword(ask Ask, usernameEnvar, passwordEnvar string) (*Credent
 		username = strings.TrimRight(string(bytes), "\n\r")
 	}
 
-	password := os.Getenv(passwordEnvar)
 	if ask == MustAsk || ask == CanAsk && password == "" && istty {
 		fmt.Print("Enter password: ")
 		bytes, err := terminal.ReadPassword(stdin)

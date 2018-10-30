@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -26,14 +27,10 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/httpe"
 )
 
-const (
-	usernameEnvar = "STD_PUBLISHR_USERNAME"
-	passwordEnvar = "STD_PUBLISHR_PASSWORD"
-)
-
 func star(_ rune) rune {
 	return '*'
 }
+
 func Publish(cfg *config.Config, ctx *context.Context) error {
 
 	istty := isatty.IsTerminal(os.Stdout.Fd())
@@ -66,18 +63,22 @@ func Publish(cfg *config.Config, ctx *context.Context) error {
 	}
 
 	// get credentials
-	shouldask := credentials.CanAsk
-
-	creds, err := credentials.GetUsernamePassword(shouldask, usernameEnvar, passwordEnvar)
+	shouldask := credentials.NeverAsk
+	if runtime.GOOS == "windows" || isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		shouldask = credentials.CanAsk
+	}
+	creds, err := credentials.GetUsernamePassword(shouldask, viper.GetString("nexus.username"), viper.GetString("nexus.password"))
 	if err != nil {
 		return errors.Wrapf(err, "getting credentials")
 	}
+
 	if creds.Username == "" {
-		return errors.Errorf("username can not be empty (set envar %v)", usernameEnvar)
+		return errors.New("nexus username can not be empty")
 	}
 	if creds.Password == "" {
-		return errors.Errorf("password can not be empty (set envar %v)", passwordEnvar)
+		return errors.New("nexus password can not be empty")
 	}
+
 	log.Debugf("using username %q and password %q", creds.Username, strings.Map(star, creds.Password))
 
 	for _, file := range ctx.Artifacts {
