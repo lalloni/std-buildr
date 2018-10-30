@@ -17,7 +17,7 @@ Se desea **clonar** un proyecto SQL Diferido del sistema `factura-blockchain` qu
 Para ello se ejecuta el comando clone de git:
 
 ```bash
-git clone git@gitlab.cloudint.afip.gob.ar/factura-blockchain/factura-blockchain-sql-process.git $HOME/projects/factura-blockchain-sql-process
+git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-process.git $HOME/projects/factura-blockchain-sql-process
 cd $HOME/projects/factura-blockchain-sql-process
 ```
 
@@ -59,12 +59,6 @@ git push origin master
 ```
 
 ## Desarrollar
-
-En caso de no ser el creador del proyecto y este exista en gitlab (si no existe es necesario [crear un proyecto](#Crear-proyecto) y continuar con la creacion del script) habrá que clonarlo desde gitlab con el siguiente comando:
-
-```bash
-git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-process.git
-```
 
 Crear un nuevo script en `src/sql`:
 
