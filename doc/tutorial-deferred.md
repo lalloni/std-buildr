@@ -14,7 +14,7 @@ A continuación se detallan ambas alternativas:
 
 Se desea **clonar** un proyecto SQL Diferido del sistema `factura-blockchain` que corresponde a la aplicacíón  `factura-blockchain-sql-process`.
 
-Para ello se ejecuta el comando clone de git:
+Para ello se debe ejecutar el comando clone de git:
 
 ```bash
 git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-process.git
@@ -27,7 +27,7 @@ Luego de lo cual podremos empezar a realizar los cambios requeridos en el direct
 
 Se desea **crear** un proyecto SQL Diferido para el sistema `factura-blockchain` que corresponde a la aplicacion `factura-blockchain-sql-process`
 
-Para ello se ejecuta el comando create-project del gestor de proyectos std-buildr:
+Para ello se debe ejecutar el comando create-project del gestor de proyectos std-buildr:
 
 ```bash
 std-buildr create-project --application-id factura-blockchain-sql-process  --system-id factura-blockchain --type oracle-sql-deferred
@@ -72,7 +72,7 @@ factura-blockchain-sql-process
         └── proceso-diario.sql
 ```
 
-Se agregan los archivos al indice de git y se realiza un comit ejecutando los siguientes comandos :
+Agregar los archivos al index de git y crear un commit ejecutando los siguientes comandos:
 
 ```bash
 git add src/sql/proceso-diario.sql
@@ -89,24 +89,10 @@ Crear un tag de la siguiente manera:
 git tag v1.0.0 -a -m "Version 1.0.0"
 ```
 
-Para finalizar se ejecuta el comando publish del gestor de proyectos std-buildr, el cual empaquetara y publicara el proyecto:
+Ejecutar el comando publish del gestor de proyectos std-buildr, el cual empaquetará y publicará el proyecto:
 
 ```bash
 std-buildr publish
 ```
 
-El comando package de `std-buildr` creara lo siguiente:
-
-```tree
-factura-blockchain-sql-process
-└── target/
-    └── factura-blockchain-sql-process-1.0.0.zip
-```
-
-Cuyo contenido sera:
-
-```tree
-factura-blockchain-sql-process-proceso-diario.sql
-```
-
-Y publicará el archivo zip al repositorio Nexus correspondiente.
+Que publicará el archivo zip al repositorio Nexus correspondiente.
