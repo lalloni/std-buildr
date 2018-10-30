@@ -27,7 +27,11 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/httpe"
 )
 
-const defaultNexusURL = "https://nexus.cloudint.afip.gob.ar/nexus/repository"
+const (
+	usernameEnvar   = "STD_BUILDR_NEXUS_USERNAME"
+	passwordEnvar   = "STD_BUILDR_NEXUS_PASSWORD"
+	defaultNexusURL = "https://nexus.cloudint.afip.gob.ar/nexus/repository"
+)
 
 func star(_ rune) rune {
 	return '*'
