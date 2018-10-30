@@ -104,11 +104,15 @@ std-buildr publish
 El comando package de `std-buildr` creara lo siguiente:
 
 ```tree
-└── factura-blockchain-sql-process-1.0.0.zip
+factura-blockchain-sql-process
+└── target/
+    └── factura-blockchain-sql-process-1.0.0.zip
 ```
 
 Cuyo contenido sera:
 
 ```tree
-└── factura-blockchain-sql-process-proceso-diario.sql
+factura-blockchain-sql-process-proceso-diario.sql
 ```
+
+Y publicará el archivo zip al repositorio Nexus correspondiente.
