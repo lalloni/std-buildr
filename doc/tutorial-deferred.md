@@ -1,12 +1,33 @@
 # Paso a paso: SQL Diferido
 
-Este documento esta destinado a guiar al desarrollador en la creación, desarrollo, empaquetado y publicación de un proyectos SQL Diferidos según los estándares.
+Este documento esta destinado a guiar al desarrollador en la preparación del entorno de trabajo, el desarrollo, el empaquetado y la publicación de un proyectos SQL Diferidos según los estándares.
 
-## Crear proyecto
+## Preparación del entorno de trabajo
 
-Se desea crear un proyecto SQL Diferido para el sistema `factura-blockchain` que corresponde a la aplicacion `factura-blockchain-sql-process`
+El primer paso necesario es tener una copia local del proyecto de la Aplicación Oracle SQL Diferida en el entorno del desarrollador.
 
-Se ejecuta el comando create-project del gestor de proyectos std-buildr:
+Para esto hay dos alternativas según la fase del proyecto en el que se desea trabajar, si el proyecto ya existe será suficiente con clonar el repositorio existente en GitLab al entorno del desarrollador, mientras que si el proyecto no existe habrá que crear uno nuevo en el entorno del desarrollador y subirlo a un nuevo repositorio en GitLab.
+
+A continuación se detallan ambas alternativas:
+
+### Clonar proyecto
+
+Se desea **clonar** un proyecto SQL Diferido del sistema `factura-blockchain` que corresponde a la aplicacíón  `factura-blockchain-sql-process`.
+
+Para ello se ejecuta el comando clone de git:
+
+```bash
+git clone git@gitlab.cloudint.afip.gob.ar/factura-blockchain/factura-blockchain-sql-process.git $HOME/projects/factura-blockchain-sql-process
+cd $HOME/projects/factura-blockchain-sql-process
+```
+
+Luego de lo cual podremos empezar a realizar los cambios requeridos en el directorio actual.
+
+### Crear proyecto
+
+Se desea **crear** un proyecto SQL Diferido para el sistema `factura-blockchain` que corresponde a la aplicacion `factura-blockchain-sql-process`
+
+Para ello se ejecuta el comando create-project del gestor de proyectos std-buildr:
 
 ```bash
 std-buildr create-project --application-id factura-blockchain-sql-process  --system-id factura-blockchain --type oracle-sql-deferred
