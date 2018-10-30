@@ -5,7 +5,10 @@ import (
 	"text/template"
 )
 
-const README = "README.md"
+const (
+	README    = "README.md"
+	GITIGNORE = ".gitignore"
+)
 
 func render(tpl *template.Template, target string, data interface{}) error {
 	w, err := os.Create(target)
