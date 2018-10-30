@@ -17,8 +17,8 @@ Se desea **clonar** un proyecto SQL Diferido del sistema `factura-blockchain` qu
 Para ello se ejecuta el comando clone de git:
 
 ```bash
-git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-process.git $HOME/projects/factura-blockchain-sql-process
-cd $HOME/projects/factura-blockchain-sql-process
+git clone git@gitlab.cloudint.afip.gob.ar:factura-blockchain/factura-blockchain-sql-process.git
+cd factura-blockchain-sql-process
 ```
 
 Luego de lo cual podremos empezar a realizar los cambios requeridos en el directorio actual.
@@ -55,7 +55,7 @@ type: oracle-sql-deferred
 **El directorio creado, `factura-blockchain-sql-process` es un proyecto git con un `commit` inicial que incluye a todos los archivos generados.  Se deberá agregar un repositorio `remote` y por último grabar la nueva estructura en el repositorio remoto de gitlab:**
 
 ```bash
-git push origin master
+git push -u origin master
 ```
 
 ## Desarrollar
