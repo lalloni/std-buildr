@@ -7,7 +7,7 @@ import (
 )
 
 func RenderGitIgnore(cfg *config.Config, location string) error {
-	return ioutil.WriteFile(location, []byte(gitignore), 0666)
+	return ioutil.WriteFile(location, []byte(gitignore), 0664)
 }
 
 const gitignore = `target/`
