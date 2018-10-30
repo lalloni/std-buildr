@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -25,6 +26,12 @@ import (
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/context"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/credentials"
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/httpe"
+)
+
+const (
+	usernameEnvar   = "STD_BUILDR_NEXUS_USERNAME"
+	passwordEnvar   = "STD_BUILDR_NEXUS_PASSWORD"
+	defaultNexusURL = "https://nexus.cloudint.afip.gob.ar/nexus/repository"
 )
 
 func star(_ rune) rune {
@@ -102,11 +109,12 @@ func Publish(cfg *config.Config, ctx *context.Context) error {
 		// put file
 		log.Debug("putting file...")
 
-		if cfg.Nexus.URL[len(cfg.Nexus.URL)-1:] == "/" {
-			cfg.Nexus.URL = cfg.Nexus.URL[0:(len(cfg.Nexus.URL) - 1)]
+		base := cfg.Nexus.URL
+		if base == "" {
+			base = defaultNexusURL
 		}
 
-		u := fmt.Sprintf("%s/%s-raw/%s/%s/%s/%s", cfg.Nexus.URL, cfg.SystemID, cfg.SystemID, cfg.ApplicationID, ctx.Build.String(), file.File)
+		u := path.Join(base, cfg.SystemID+"-raw", cfg.SystemID, cfg.ApplicationID, ctx.Build.String(), file.File)
 
 		log.Infof("uploading in %s", u)
 
