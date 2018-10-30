@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
@@ -85,7 +86,8 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".buildr")
 	}
-
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	viper.SetEnvPrefix(rootCmd.Use)
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
