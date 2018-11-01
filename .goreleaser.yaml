@@ -19,6 +19,11 @@ archive:
   format_overrides:
     - goos: windows
       format: zip
+  files:
+    - doc/*
+    - README.md
+    - RELEASE.md
+    - INSTALL.md
 checksum:
   name_template: "{{ .ProjectName }}-{{ .Version }}-sha256-checksums.txt"
 sign:
@@ -27,7 +32,30 @@ release:
   disable: true
 puts:
   - name: nexus
-    target: https://nexus.cloudint.afip.gob.ar/std-raw/std/{{ .ProjectName }}/{{ .Version }}/
+    target: https://nexus.cloudint.afip.gob.ar/nexus/repository/std-raw/std/{{ .ProjectName }}/{{ .Version }}/
     checksum: true
-    signature: true
-    username: plalloni
+    mode: archive
+    signature: false
+    trusted_certificates: |
+      -----BEGIN CERTIFICATE-----
+      MIIDrjCCApagAwIBAgIIShr2zchZo+8wDQYJKoZIhvcNAQENBQAwNTEXMBUGA1UE
+      AwwOQUZJUCBSb290IENBIDIxDTALBgNVBAoMBEFGSVAxCzAJBgNVBAYTAkFSMB4X
+      DTE2MDExODE1Mjg1MloXDTI2MDExODAzMDAwMFowFjEUMBIGA1UEAwwLQUZJUCBT
+      U0wgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCGBp2+mSzY+zjq
+      xhnuQoLGUwR+qlD20zedov2gOZTMtmCTb8OEcI2Lgb/AN31ISJDA3Mr4UWcz5sWI
+      jW12yFTFOBurTk/nvbfuoGufZe3bGscLVi7zE3Gp18i1e7CGekbMWI2X1Uo901l1
+      J1B+VKp4+T9axCsarYP8IW6Z9lmJz19xkhE3u1L9zCrcOVOkc9rHNGBasWLHezmI
+      MjKLjFAkFEDZ0tb8BCYZMc6A9p57bn+JzeAlawii2wEYN4u2NADbnOa7n8hH47zL
+      8fUdGgm4f9bWbtqSoZCBNehrN6ovV0aYtP/CmsRgNBR2FDIW4CvSfbEKFmQkKdiK
+      w2c7RYkfAgMBAAGjgeAwgd0wOQYIKwYBBQUHAQEELTArMCkGCCsGAQUFBzABhh1o
+      dHRwOi8vYXV0aC5hZmlwLmdvYi5hci9vY3NwLzAdBgNVHQ4EFgQUOCpeihHJe7FE
+      J2FL5B7RUVls3IcwDwYDVR0TAQH/BAUwAwEB/zAfBgNVHSMEGDAWgBSub6bslHl0
+      a1A02pk2VbNxXSiaBjA/BgNVHR8EODA2MDSgMqAwhi5odHRwOi8vYXV0aC5hZmlw
+      LmdvYi5hci9jcmwvYWZpcC1yb290LWNhLTIuY3JsMA4GA1UdDwEB/wQEAwIBhjAN
+      BgkqhkiG9w0BAQ0FAAOCAQEAce3JgILEdRn4NnORKO+2ZFZGDvdwN5q2UCWqFd9+
+      lkXkZ6N2xHEl8cHfFCPi0h+MYu1/nvmGqppUssEFdbr+EFynMF7fAu+WhhkmFqyX
+      bDs7ZqC8O6TsLFwHS9eOA3N497qToPbMoi89wket3oZ6gIAIZELcFTk/A6DA2Bdg
+      p3r7LM2AA9lh6eSiv2H9YyPTu0+j+ZhshWhtM18sUs8k+bZ+gLtkEwA1h6SnVWDw
+      S541nd/V2N1BbVRn6DOXCw3DI/2UZpxe+51a0Ki4KzwewBDr/cHkkZQEMAcar7Ka
+      TyzMJasj5BPZrmKjJb6O/tOtEIJ66xPSBTxPShkEYHnB7A==
+      -----END CERTIFICATE-----

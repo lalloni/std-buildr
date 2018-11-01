@@ -5,6 +5,7 @@ import (
 
 	"gitlab.cloudint.afip.gob.ar/std/std-buildr/initializer/helpers"
 
+	"github.com/apex/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -13,8 +14,9 @@ import (
 )
 
 const (
-	eveFolder  = "src/sql"
-	baseBranch = "base"
+	eveFolder        = "src/sql"
+	localBaseBranch  = "base"
+	remoteBaseBranch = "origin/base"
 )
 
 type Script struct {
@@ -30,7 +32,7 @@ func Initialize(cfg *config.Config) error {
 
 	tid := viper.GetString("buildr.tracker-id")
 	if tid == "" {
-		return errors.Errorf("--tracker-id is required")
+		return errors.New("tracker-id is required")
 	}
 	cfg.TrackerID = tid
 
@@ -38,8 +40,8 @@ func Initialize(cfg *config.Config) error {
 		return errors.Wrap(err, "creating project structure")
 	}
 
-	if err := createBaseBranch(cfg); err != nil {
-		return errors.Wrap(err, "creating eventual base branch")
+	if err := git.CommitAddingAll("Crea estructura inicial de proyecto SQL eventual (std-buildr)"); err != nil {
+		return errors.Wrap(err, "creating sql eventual commit in git")
 	}
 
 	return nil
@@ -56,34 +58,54 @@ func CreateEventual(cfg *config.Config) error {
 		return errors.Errorf("you have changes uncommited, please commit them or undo")
 	}
 
+	newBranch := fmt.Sprintf("%s-%s", cfg.TrackerID, cfg.IssueID)
+
 	// validar que exista branch base
-	exist, err := git.ExistBranch(baseBranch)
+	existLocal, err := git.ExistBranch(localBaseBranch)
 	if err != nil {
-		return errors.Wrap(err, "checking for base branch existence")
+		return errors.Wrap(err, "checking for local base branch existence")
 	}
-	if !exist {
-		exist, err := git.ExistBranch(baseBranch)
+	if existLocal {
+		log.Warnf("new eventual branch will be based on the local branch named '%s'", localBaseBranch)
+	} else {
+		existRemote, err := git.ExistBranch(remoteBaseBranch)
 		if err != nil {
 			return errors.Wrap(err, "checking for remote base branch existence")
 		}
-		if exist {
-			git.CreateBranchFrom("base", "origin/base")
+		if existRemote {
+			log.Warnf("new eventual branch will be based on the remote branch named '%s'", remoteBaseBranch)
+			// crear local desde remote
+			err := git.CreateBranchFrom(localBaseBranch, remoteBaseBranch)
+			if err != nil {
+				return errors.Wrap(err, "creating local base branch from remote base branch")
+			}
+			existLocal = true
 		} else {
-			if err := createBaseBranch(cfg); err != nil {
-				return errors.Wrap(err, "creating eventual base branch")
+			// solo creamos el branch del eventual
+			if err := git.CreateOrphanBranch(newBranch); err != nil {
+				return errors.Wrap(err, "creating base branch")
 			}
 		}
 	}
 
-	// crear branch para el eventual
-	newBranch := fmt.Sprintf("%s-%s", cfg.TrackerID, cfg.IssueID)
-	if err := git.CreateBranchFrom(newBranch, baseBranch); err != nil {
-		return errors.Wrapf(err, "creating branch %s from %s", newBranch, baseBranch)
+	// si existía o creamos la local base...
+	if existLocal {
+		// crear branch para el eventual desde base local
+		if err := git.CreateBranchFrom(newBranch, localBaseBranch); err != nil {
+			return errors.Wrapf(err, "creating branch %s from %s", newBranch, localBaseBranch)
+		}
 	}
 
-	// crear config de proyecto
-	if err := helpers.CreateProjectConfig(cfg); err != nil {
-		return errors.Wrap(err, "creating project configuration")
+	// en este punto debe existir branch del eventual y solo tratamos con ella en adelante
+
+	// creamos estructura de archivos para el eventual
+	if err := createEventualStructure(cfg); err != nil {
+		return errors.Wrap(err, "creating eventual structure")
+	}
+
+	// commiteamos estado en el branch del eventual
+	if err := git.CommitAddingAll("Crea estructura inicial para SQL eventual (std-buildr)"); err != nil {
+		return errors.Wrap(err, "creating sql eventual commit in git")
 	}
 
 	// crear scripts solicitados

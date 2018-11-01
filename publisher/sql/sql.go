@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
+	"runtime"
 	"strings"
 	"time"
 
@@ -27,13 +29,15 @@ import (
 )
 
 const (
-	usernameEnvar = "STD_PUBLISHR_USERNAME"
-	passwordEnvar = "STD_PUBLISHR_PASSWORD"
+	usernameEnvar   = "STD_BUILDR_NEXUS_USERNAME"
+	passwordEnvar   = "STD_BUILDR_NEXUS_PASSWORD"
+	defaultNexusURL = "https://nexus.cloudint.afip.gob.ar/nexus/repository"
 )
 
 func star(_ rune) rune {
 	return '*'
 }
+
 func Publish(cfg *config.Config, ctx *context.Context) error {
 
 	istty := isatty.IsTerminal(os.Stdout.Fd())
@@ -66,18 +70,22 @@ func Publish(cfg *config.Config, ctx *context.Context) error {
 	}
 
 	// get credentials
-	shouldask := credentials.CanAsk
-
-	creds, err := credentials.GetUsernamePassword(shouldask, usernameEnvar, passwordEnvar)
+	shouldask := credentials.NeverAsk
+	if runtime.GOOS == "windows" || isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		shouldask = credentials.CanAsk
+	}
+	creds, err := credentials.GetUsernamePassword(shouldask, viper.GetString("nexus.username"), viper.GetString("nexus.password"))
 	if err != nil {
 		return errors.Wrapf(err, "getting credentials")
 	}
+
 	if creds.Username == "" {
-		return errors.Errorf("username can not be empty (set envar %v)", usernameEnvar)
+		return errors.New("nexus username can not be empty")
 	}
 	if creds.Password == "" {
-		return errors.Errorf("password can not be empty (set envar %v)", passwordEnvar)
+		return errors.New("nexus password can not be empty")
 	}
+
 	log.Debugf("using username %q and password %q", creds.Username, strings.Map(star, creds.Password))
 
 	for _, file := range ctx.Artifacts {
@@ -101,11 +109,12 @@ func Publish(cfg *config.Config, ctx *context.Context) error {
 		// put file
 		log.Debug("putting file...")
 
-		if cfg.Nexus.URL[len(cfg.Nexus.URL)-1:] == "/" {
-			cfg.Nexus.URL = cfg.Nexus.URL[0:(len(cfg.Nexus.URL) - 1)]
+		base := cfg.Nexus.URL
+		if base == "" {
+			base = defaultNexusURL
 		}
 
-		u := fmt.Sprintf("%s/%s-raw/%s/%s/%s/%s", cfg.Nexus.URL, cfg.SystemID, cfg.SystemID, cfg.ApplicationID, ctx.Build.String(), file.File)
+		u := path.Join(base, cfg.SystemID+"-raw", cfg.SystemID, cfg.ApplicationID, ctx.Build.String(), file.File)
 
 		log.Infof("uploading in %s", u)
 

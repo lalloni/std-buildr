@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/pkg/errors"
@@ -36,7 +37,8 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "buildr",
+	Use:               "std-buildr",
+	SilenceErrors:     true,
 	SilenceUsage:      true,
 	PersistentPreRunE: preRunRoot,
 }
@@ -45,7 +47,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		//fmt.Println(err)
+		log.Fatalf(err.Error())
 		os.Exit(1)
 	}
 }
@@ -84,7 +86,8 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".buildr")
 	}
-
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	viper.SetEnvPrefix(rootCmd.Use)
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.

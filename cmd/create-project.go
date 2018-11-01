@@ -21,13 +21,13 @@ func init() {
 	createProject.PersistentFlags().StringP("system-id", "s", "", "System Id")
 	must(viper.BindPFlag("buildr.system-id", createProject.PersistentFlags().Lookup("system-id")))
 
-	createProject.PersistentFlags().StringP("applicationId", "a", "", "Application ID")
-	must(viper.BindPFlag("buildr.application-id", createProject.PersistentFlags().Lookup("applicationId")))
+	createProject.PersistentFlags().StringP("application-id", "a", "", "Application ID")
+	must(viper.BindPFlag("buildr.application-id", createProject.PersistentFlags().Lookup("application-id")))
 
 	createProject.PersistentFlags().StringP("type", "t", "", "Project type")
 	must(viper.BindPFlag("buildr.type", createProject.PersistentFlags().Lookup("type")))
 
-	createProject.PersistentFlags().StringP("tracker-id", "T", "", "Issue tracker id. Only for SQL Eventual Applications")
+	createProject.PersistentFlags().StringP("tracker-id", "T", "", "Issue tracker ID for Oracle SQL Eventual applications")
 	must(viper.BindPFlag("buildr.tracker-id", createProject.PersistentFlags().Lookup("tracker-id")))
 
 	rootCmd.AddCommand(createProject)

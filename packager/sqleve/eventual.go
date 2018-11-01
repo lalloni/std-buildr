@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -27,6 +27,10 @@ const targetSource = "target/source"
 var eventualRegexp = regexp.MustCompile(`^(?:(.*)([-_]))?(\d{3,})([-_])(dml|dcl|ddl)(?:([-_])(.+))?\.sql$`)
 
 func Package(cfg *config.Config, ctx *context.Context) error {
+
+	if cfg.IssueID == "" {
+		return errors.Errorf(`issue-id is required in configuration`)
+	}
 
 	ev, err := version.ParseEventualVersion(ctx.Build.Version)
 	if err != nil {
@@ -83,14 +87,14 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 	for _, source := range sources {
 
-		if path.Base(source) == templates.README {
+		if filepath.Base(source) == templates.README {
 			continue
 		}
-		if !eventualRegexp.MatchString(path.Base(source)) {
+		if !eventualRegexp.MatchString(filepath.Base(source)) {
 			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, eventualRegexp.String())
 		}
 
-		ss := eventualRegexp.FindStringSubmatch(path.Base(source))
+		ss := eventualRegexp.FindStringSubmatch(filepath.Base(source))
 		tag := fmt.Sprintf("%s-%s-%d", ev.TrackerID, ev.IssueID, ev.Version)
 		if len(ss[1]) != 0 && (ss[1] != tag) {
 			tag2 := fmt.Sprintf("%s_%s_%d", ev.TrackerID, ev.IssueID, ev.Version)
@@ -107,7 +111,7 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 		}
 
-		targetName := path.Base(source)
+		targetName := filepath.Base(source)
 		if len(ss[1]) == 0 {
 			targetName = tag + "-" + targetName
 		}

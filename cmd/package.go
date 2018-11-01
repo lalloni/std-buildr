@@ -36,7 +36,7 @@ import (
 var packageCmd = &cobra.Command{
 	Use:     "package",
 	Short:   "Package the current version of the project",
-	PreRunE: loadProjectConfig,
+	PreRunE: chain(loadProjectConfig),
 	RunE:    chain(runClean, runPackage),
 }
 

@@ -1,7 +1,7 @@
 package ar
 
 import (
-	"path"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -11,7 +11,7 @@ func Package(targetFormat format, target string, files []string) error {
 	if err != nil {
 		return errors.Wrapf(err, "creating %s archiver", targetFormat)
 	}
-	err = archiver.AddAll(files, path.Base)
+	err = archiver.AddAll(files, filepath.Base)
 	if err != nil {
 		defer archiver.Close()
 		return errors.Wrapf(err, "adding files to %s archiver", targetFormat)

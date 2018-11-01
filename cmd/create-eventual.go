@@ -17,7 +17,7 @@ import (
 var createEventual = &cobra.Command{
 	Use:     "create-eventual",
 	Short:   "Create standar eventual workspace with the appropriate structure",
-	PreRunE: chain(parseScripts),
+	PreRunE: chain(parseScripts, loadProjectConfig),
 	RunE:    chain(runCreateEventual),
 }
 
@@ -30,7 +30,7 @@ var (
 func init() {
 
 	initConfig()
-	createEventual.Flags().StringP("issue-id", "T", "", "Issue id. Only for SQL Eventual Applications")
+	createEventual.Flags().StringP("issue-id", "i", "", "Issue id. Only for SQL Eventual Applications")
 	must(viper.BindPFlag("buildr.issue-id", createEventual.Flags().Lookup("issue-id")))
 
 	dmls = createEventual.Flags().StringArray("dml", []string{}, "dml files to be created")
@@ -59,8 +59,6 @@ func scripts(ss []string, t string) []sqleve.Script {
 }
 
 func parseScripts(ctx *context.Context) error {
-
-	loadProjectConfig(nil, nil)
 
 	ss := append(scripts(*dmls, "dml"), append(scripts(*dcls, "dcl"), scripts(*ddls, "ddl")...)...)
 

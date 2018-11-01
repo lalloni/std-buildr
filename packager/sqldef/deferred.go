@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -81,15 +81,15 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 	for _, source := range sources {
 
-		if path.Base(source) == templates.README {
+		if filepath.Base(source) == templates.README {
 			continue
 		}
 
-		if !deferredRegexp.MatchString(path.Base(source)) {
+		if !deferredRegexp.MatchString(filepath.Base(source)) {
 			return errors.Errorf("source file name '%s' does not match standard naming scheme (%s)", source, deferredRegexp.String())
 		}
 
-		targetName := path.Base(source)
+		targetName := filepath.Base(source)
 
 		if !strings.HasPrefix(targetName, cfg.ApplicationID) {
 			targetName = cfg.ApplicationID + "-" + targetName
