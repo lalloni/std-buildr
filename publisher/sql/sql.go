@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"runtime"
@@ -114,11 +115,16 @@ func Publish(cfg *config.Config, ctx *context.Context) error {
 			base = defaultNexusURL
 		}
 
-		u := path.Join(base, cfg.SystemID+"-raw", cfg.SystemID, cfg.ApplicationID, ctx.Build.String(), file.File)
+		u, err := url.Parse(base)
+		if err != nil {
+			return errors.Wrap(err, "invalid nexus url")
+		}
+
+		u.Path = path.Join(u.Path, cfg.SystemID+"-raw", cfg.SystemID, cfg.ApplicationID, ctx.Build.String(), file.File)
 
 		log.Infof("uploading in %s", u)
 
-		_, err = httpe.Put(client, creds, u, body, http.StatusCreated)
+		_, err = httpe.Put(client, creds, u.String(), body, http.StatusCreated)
 		if err != nil {
 			return errors.Wrapf(err, "uploading file")
 		}
@@ -126,7 +132,7 @@ func Publish(cfg *config.Config, ctx *context.Context) error {
 		// put md5 digest
 		log.Debug("putting md5 digest file...")
 		body = strings.NewReader(hex.EncodeToString(md5sum.Sum(nil)))
-		_, err = httpe.Put(client, creds, u+".md5", body, http.StatusCreated)
+		_, err = httpe.Put(client, creds, u.String()+".md5", body, http.StatusCreated)
 		if err != nil {
 			return errors.Wrapf(err, "uploading md5 digest file")
 		}
@@ -134,7 +140,7 @@ func Publish(cfg *config.Config, ctx *context.Context) error {
 		// put sha1 digest
 		log.Debug("putting sha1 digest file...")
 		body = strings.NewReader(hex.EncodeToString(sha1sum.Sum(nil)))
-		_, err = httpe.Put(client, creds, u+".sha1", body, http.StatusCreated)
+		_, err = httpe.Put(client, creds, u.String()+".sha1", body, http.StatusCreated)
 		if err != nil {
 			return errors.Wrapf(err, "uploading md5 digest file")
 		}
