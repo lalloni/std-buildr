@@ -12,6 +12,23 @@ El comando `publish` construye y publica una versión de una aplicación.
 
 * **trust**: Ubicación del archivo en formato PEM que contiene la cadenas de certificados de confianza. Opcional. Por defecto se utilizan los certificados confiables de AFIP de manera tal que se pueda publicar al Nexus de la organización.
 
+### Credenciales
+
+La herramienta obtiene las credenciales para autenticarse ante Nexus de las siguientes maneras:
+
+* **Variables de ambiente::**
+  * **STD_BUILDR_NEXUS_USERNAME**
+  * **STD_BUILDR_NEXUS_PASSWORD**
+* **Archivo de configuracion: ~/.buidr.yaml**
+
+~~~yaml
+nexus:
+  username: usuario
+  password: contraseña
+~~~
+
+En caso de no informarse las credenciales, la herramienta las solicitara interactivamente, siempre y cuando se este ejecutado en una terminal (En el caso de Windows: Powershell y cmd)
+
 ### Comportamiento
 
 Este comando realiza los siguientes pasos:
