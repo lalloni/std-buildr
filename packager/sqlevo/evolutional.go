@@ -168,31 +168,45 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 	// package incrementals
 	if len(cfg.From) > 0 {
+
 		log.Infof("generating incremental packages")
 		for _, from := range cfg.From {
+
 			log.Infof("from %s: listing v%s tag files", from, from)
-			include := make(map[string]string)
-			for k, v := range sourcesTargetMap {
-				include[k] = v
+
+			fromV := "v" + from
+			if fromV == v[0] {
+				fromV = from + "~"
 			}
-			s, err := sh.Output("git", "ls-tree", "-r", "--name-only", "v"+from)
+			include := make([]string, 0)
+
+			s, err := sh.Output("git", "diff", "--name-only", "--diff-filter=A", fromV, v[0])
 			if err != nil {
 				return errors.Wrapf(err, "listing tag 'v%s' content: %s", from, s)
 			}
 			ss := bufio.NewScanner(bytes.NewBufferString(s))
 			for ss.Scan() {
 				f := ss.Text()
-				delete(include, f)
-				log.Infof("excluding %s", f)
-			}
-			targetSources := make([]string, 0)
-			for _, v := range include {
-				targetSources = append(targetSources, v)
+				fileInBaseRegexp := regexp.MustCompile(`^src\/sql\/(?:inc|incremental)\/(.+\.sql)`)
+
+				if !fileInBaseRegexp.MatchString(f) {
+
+					log.Infof("excluding %s", f)
+					continue
+				}
+				sss := evolutionalRegexp.FindStringSubmatch(filepath.Base(f))
+				ff := filepath.Base(f)
+				if len(sss[1]) == 0 {
+					ff = cfg.ApplicationID + "-" + ff
+				}
+				log.Infof("including %s", ff)
+
+				include = append(include, filepath.Join(targetSource, filepath.Base(ff)))
 			}
 			packageName := format.AddExt(fmt.Sprintf("%s-%s-from-%s", cfg.ApplicationID, ctx.Build.String(), from))
 			targetPackage := fmt.Sprintf("target/%s", packageName)
 			log.Infof("writing to '%s'", targetPackage)
-			err = ar.Package(format, targetPackage, targetSources)
+			err = ar.Package(format, targetPackage, include)
 			if err != nil {
 				return errors.Wrapf(err, "packaging source files")
 			}
