@@ -176,7 +176,10 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 			fromV := "v" + from
 			if fromV == v[0] {
-				fromV = from + "~"
+				fromV, err = GetPreviousTag(v[0])
+				if err != nil {
+					return errors.Wrapf(err, "getting previous tag")
+				}
 			}
 			include := make([]string, 0)
 
@@ -216,4 +219,25 @@ func Package(cfg *config.Config, ctx *context.Context) error {
 
 	log.Info("done")
 	return nil
+}
+
+func GetPreviousTag(v string) (string, error) {
+	commit, err := sh.Output("git", "rev-list", "--tags", "--skip=1", "--max-count=1")
+	if err != nil {
+		return "", errors.Wrapf(err, "getting last version commit")
+	}
+	fromTag, err := sh.Output("git", "describe", "--abbrev=0", commit)
+	if err != nil {
+
+		log.Warnf("No previous tag. Getting first commit")
+
+		commit, err = sh.Output("git", "rev-list", "--max-parents=0", v)
+		if err != nil {
+			return "", errors.Wrapf(err, "getting first commit")
+		}
+
+		fromTag = commit
+	}
+
+	return fromTag, nil
 }
